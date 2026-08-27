@@ -8,8 +8,8 @@
     "bugs": "https://github.com/barneywohl/huggingbay-coprocessor/issues"
   },
   "status": {
-    "repository_created": false,
-    "repository_pushed": false,
+    "repository_created": true,
+    "repository_pushed": true,
     "npm_published": false,
     "connector_submitted": false,
     "connector_approved": false
