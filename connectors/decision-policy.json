@@ -1,0 +1,26 @@
+{
+  "schema": "bay-run.pin-decision.v1",
+  "tool_action_path": {
+    "coprocessor": "response.action",
+    "run_pin": "response.decision.action",
+    "solve_task": "response.decision.action"
+  },
+  "default_response": {
+    "mode": "decision-only",
+    "omit_raw_result": true,
+    "raw_result_opt_in": "Set omit_raw_result=false only when receipt-bound raw evidence is explicitly required."
+  },
+  "actions": {
+    "allow": "Continue only within the caller's approved task and data policy.",
+    "block": "Stop generation, tool use, and downstream execution for the input.",
+    "escalate": "Pause automation for human or policy review.",
+    "abstain": "Do not auto-route or treat an uncertain result as accepted; send it to review.",
+    "need_labels": "Do not execute the task; provide candidate labels or labeled examples before retrying.",
+    "rank": "Use the returned ordering signal only; it is not a relevance or correctness proof."
+  },
+  "limitations": [
+    "Guard is limited to its published English prompt-injection scope.",
+    "Rerank is an ordering signal, not a relevance, correctness, or safety verdict.",
+    "Receipt and decision-evidence signatures attest to binding and metadata, not answer truth or model quality."
+  ]
+}

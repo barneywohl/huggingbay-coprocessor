@@ -1,0 +1,17 @@
+{
+  "name": "bay-run",
+  "version": "1.0.0",
+  "description": "Connect Cursor to Bay Run's focused Streamable HTTP MCP server with three bounded tools: coprocessor, run_pin, and solve_task. MCP defaults to decision-only responses (omit_raw_result=true); the coprocessor never generates text or executes tools, and receipts do not prove answer correctness.",
+  "author": {
+    "name": "Bay Run"
+  },
+  "homepage": "https://github.com/barneywohl/huggingbay-coprocessor",
+  "keywords": [
+    "mcp",
+    "bay-run",
+    "streamable-http",
+    "specialist",
+    "decision"
+  ],
+  "mcpServers": "./mcp.json"
+}

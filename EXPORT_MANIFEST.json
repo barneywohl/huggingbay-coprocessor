@@ -1,0 +1,108 @@
+{
+  "schema": "huggingbay.public-coprocessor-export.v1",
+  "public_repository": "https://github.com/barneywohl/huggingbay-coprocessor",
+  "package": {
+    "name": "@huggingbay/coprocessor",
+    "version": "0.1.4",
+    "repository": "https://github.com/barneywohl/huggingbay-coprocessor",
+    "bugs": "https://github.com/barneywohl/huggingbay-coprocessor/issues"
+  },
+  "status": {
+    "repository_created": false,
+    "repository_pushed": false,
+    "npm_published": false,
+    "connector_submitted": false,
+    "connector_approved": false
+  },
+  "files": [
+    {
+      "path": "LICENSE",
+      "sha256": "0f6fb5edade4b15736495e83127087dc6870b74ddfc607e20fe9d6b186851d68"
+    },
+    {
+      "path": "README.md",
+      "sha256": "d9055d38f938341a61c764c2b975213d7a3ad66deb60c8e6973205a32a18d3e6"
+    },
+    {
+      "path": "SECURITY.md",
+      "sha256": "e003a3061c7d026c93f44a17ab1b3be61ae56f902d8efe9a8d296575cd0e28d2"
+    },
+    {
+      "path": "connectors/README.md",
+      "sha256": "32189b0deeba62d87e8d2f96deafa3252aec57599da9da08e9e7e8907d9fce22"
+    },
+    {
+      "path": "connectors/SUBMISSION.md",
+      "sha256": "3219c2488f14a1fa4536cb9e60378e87c02ad91d975fceb357d5690750f1a60f"
+    },
+    {
+      "path": "connectors/cursor-install.json",
+      "sha256": "a68b9a25c01a82af6209bc4c667e644c9067017afb1b22c8d303f96f3cc30d02"
+    },
+    {
+      "path": "connectors/cursor-mcp.json",
+      "sha256": "75145a2ce3f31ed64cf77f19bace77344760111ec6fb8ef249fdd2f68f7e3847"
+    },
+    {
+      "path": "connectors/cursor-mcp.md",
+      "sha256": "7024b1004b6f691bf7531c51d8cba34b9a9dece076de46efa6480aefadd8a1d5"
+    },
+    {
+      "path": "connectors/cursor-plugin/.cursor-plugin/plugin.json",
+      "sha256": "03cb21f20fb0db063ff22f60699aeef34960480ca4906140815b2a989242c841"
+    },
+    {
+      "path": "connectors/cursor-plugin/mcp.json",
+      "sha256": "75145a2ce3f31ed64cf77f19bace77344760111ec6fb8ef249fdd2f68f7e3847"
+    },
+    {
+      "path": "connectors/decision-policy.json",
+      "sha256": "5ea36428ad29962d047d3e05dc0f3809942fce5a0c90aa6a5d2fe3b477ce6aa8"
+    },
+    {
+      "path": "connectors/grok-custom-connector.json",
+      "sha256": "48da6951e16e53a07d5f6678945990ae9ff89d1720d58d44da5bcbe1d79797de"
+    },
+    {
+      "path": "connectors/grok-custom-connector.md",
+      "sha256": "592131999b341553170c4c62ade96625322c64b9282b7293055481120f1a54dc"
+    },
+    {
+      "path": "examples/anthropic-style.mjs",
+      "sha256": "c0faf66392f9eee9486422d794f7b140af72fa1c731f753b5471070b7f5b4d80"
+    },
+    {
+      "path": "examples/generic.mjs",
+      "sha256": "22aa2019e3b9011590a0df25ac719ea856b9bde51b3ec858d6deb23fab449816"
+    },
+    {
+      "path": "examples/openai-compatible.mjs",
+      "sha256": "fbc19b2f0a2ae2f5c474cc29a582c9dd7e0e016e7019065ceedc9c25859c31df"
+    },
+    {
+      "path": "package.json",
+      "sha256": "838ce4ff9b7ccef4c44b62ce0247d78b0fa9670b52b975d28daa08c63cb61c39"
+    },
+    {
+      "path": "src/index.d.ts",
+      "sha256": "aaea7e58fdf3cc70b86b7b054a7ecb5739bd7a6a8f0d69d3e23fd4d8374d472d"
+    },
+    {
+      "path": "src/index.js",
+      "sha256": "0ea14718837342af6856168ce3460122b6be1f5d7a2a2fe1db9c152c1446b536"
+    },
+    {
+      "path": "verification/verified-usage.mjs",
+      "sha256": "cf6db01922544b48f74ca9829a1ef8c064efdee2f4cd8c3f68fbed193184a314"
+    }
+  ],
+  "exclusions": [
+    "All .git metadata, commit history, branches, and remotes",
+    "All monorepo files outside the explicit allowlist",
+    "Package tests, fixtures, lockfiles, node_modules, and caches",
+    "The helpdesk integration and unrelated connector verticals",
+    "Existing internal connector audit/submission packets and private runbooks",
+    "Cloud, deployment, billing, database, operator, and service-infrastructure configuration",
+    "Credentials, bearer values, API keys, private keys, customer data, and runtime secrets"
+  ]
+}

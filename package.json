@@ -1,0 +1,55 @@
+{
+  "name": "@huggingbay/coprocessor",
+  "version": "0.1.4",
+  "description": "Provider-neutral, Guard-first Bay Run middleware for caller-owned generation pipelines",
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18.17"
+  },
+  "keywords": [
+    "bay-run",
+    "coprocessor",
+    "middleware",
+    "llm",
+    "guard",
+    "prompt-injection",
+    "reranking"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src/",
+    "examples/",
+    "README.md",
+    "LICENSE"
+  ],
+  "homepage": "https://run.huggingbay.xyz/quickstart",
+  "author": "Hugging Bay",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "check": "node --check src/index.js",
+    "test": "node --test test/*.test.mjs",
+    "test:types": "npm exec --yes --package=typescript@7.0.2 -- tsc --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM --skipLibCheck test/types.fixture.ts",
+    "test:smoke": "node test/package-smoke.mjs",
+    "pack:dry-run": "npm pack --dry-run --json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/barneywohl/huggingbay-coprocessor"
+  },
+  "bugs": {
+    "url": "https://github.com/barneywohl/huggingbay-coprocessor/issues"
+  }
+}
