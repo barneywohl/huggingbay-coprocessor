@@ -1,0 +1,15 @@
+{
+  "name": "huggingbay-connectors",
+  "owner": {
+    "name": "Hugging Bay"
+  },
+  "metadata": {
+    "description": "Public Cursor plugins for Hugging Bay integrations."
+  },
+  "plugins": [
+    {
+      "name": "bay-run",
+      "source": "connectors/cursor-plugin"
+    }
+  ]
+}

@@ -16,6 +16,10 @@
   },
   "files": [
     {
+      "path": ".cursor-plugin/marketplace.json",
+      "sha256": "1682185c12dc596d1377cd5eed0ac2952644ff831085bbbdae97efd380dc5543"
+    },
+    {
       "path": "LICENSE",
       "sha256": "0f6fb5edade4b15736495e83127087dc6870b74ddfc607e20fe9d6b186851d68"
     },
@@ -90,6 +94,10 @@
     {
       "path": "src/index.js",
       "sha256": "0ea14718837342af6856168ce3460122b6be1f5d7a2a2fe1db9c152c1446b536"
+    },
+    {
+      "path": "verification/validate-connectors.mjs",
+      "sha256": "f95383942f327ca5b54887d45b554886be810ee05a75f7f19fd0a20ba1286e36"
     },
     {
       "path": "verification/verified-usage.mjs",
