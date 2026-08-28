@@ -1,8 +1,9 @@
 # Bay Run connector examples
 
-This directory contains bounded, source-only Grok and Cursor examples for Bay
-Run's public Streamable HTTP MCP surface. The examples do not deploy a service,
-create credentials, submit a listing, or claim provider approval.
+This directory contains bounded Grok and Cursor connector assets for Bay Run's
+public Streamable HTTP MCP surface. The Cursor Marketplace application was
+submitted on 2026-08-28 and is pending provider review. The assets do not deploy
+a service, create credentials, or claim provider approval.
 
 The canonical MCP URL is `https://run.huggingbay.xyz/mcp/`. Keep the focused
 tool set bounded to:
@@ -30,6 +31,8 @@ Files in this directory:
   install-link, and decision-handling examples.
 - `cursor-plugin/`: the minimal source-only Cursor plugin manifest and remote
   MCP definition.
+- `cursor-submission.json`: the bounded Cursor submission acknowledgement;
+  provider review remains pending.
 - `decision-policy.json`: the shared action-handling guidance.
 - `SUBMISSION.md`: provider submission readiness and the remaining human steps.
 

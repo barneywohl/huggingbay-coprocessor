@@ -1,7 +1,9 @@
 # Connector submission guidance
 
-Preparation only: no provider account was changed, no listing was submitted,
-and no approval is claimed by this repository.
+The Cursor Marketplace application for this public repository was submitted on
+2026-08-28 and acknowledged by Cursor. Provider review remains pending and no
+approval is claimed. The Grok material remains a Custom MCP setup guide rather
+than a public catalog submission.
 
 ## Grok
 
@@ -21,9 +23,10 @@ submission process. Do not claim catalog submission or approval.
    `https://github.com/barneywohl/huggingbay-coprocessor`.
 2. Test the `cursor-plugin/` package locally in Cursor and confirm the
    URL-only MCP definition and bounded tool set.
-3. Submit the public repository link through [Cursor Marketplace publishing](https://cursor.com/marketplace/publish).
-4. Treat Cursor review and approval as separate provider evidence; do not infer
-   either from a successful local test or a submitted link.
+3. The public repository link was submitted through [Cursor Marketplace publishing](https://cursor.com/marketplace/publish)
+   on 2026-08-28; see `cursor-submission.json` for the bounded receipt.
+4. Treat Cursor review and approval as separate provider evidence. The current
+   state is submitted and pending review, not approved or listed.
 
 ## Privacy and failure handling
 
