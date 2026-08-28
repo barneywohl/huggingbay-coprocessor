@@ -4,8 +4,10 @@ import { dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const expectedTools = ["coprocessor", "run_pin", "solve_task"];
+const expectedTools = ["run_pin", "solve_task", "coprocessor"];
 const canonicalMcpUrl = "https://run.huggingbay.xyz/mcp/";
+const privacyUrl = "https://run.huggingbay.xyz/privacy";
+const dataPolicyUrl = "https://run.huggingbay.xyz/.well-known/data-policy.json";
 
 function fail(message) {
   throw new Error(`connector validation failed: ${message}`);
@@ -67,10 +69,20 @@ function sameArray(actual, expected, label) {
 const marketplace = readJson(".cursor-plugin/marketplace.json");
 check(marketplace.name === "huggingbay-connectors", "marketplace name is incorrect");
 check(marketplace.owner?.name === "Hugging Bay", "marketplace owner is missing");
+check(
+  typeof marketplace.metadata?.description === "string" &&
+    marketplace.metadata.description.includes("Bay Run"),
+  "marketplace description must identify Bay Run",
+);
 check(Array.isArray(marketplace.plugins) && marketplace.plugins.length === 1, "marketplace must contain one plugin");
 
 const entry = marketplace.plugins[0];
 check(entry.name === "bay-run", "marketplace plugin name is incorrect");
+check(
+  typeof entry.description === "string" &&
+    expectedTools.every((tool) => entry.description.includes(tool)),
+  "marketplace plugin description must name all bounded tools",
+);
 const pluginRoot = resolveWithinRepo(entry.source, "marketplace plugin source");
 const pluginManifestRelative = `${entry.source}/.cursor-plugin/plugin.json`;
 const pluginManifest = readJson(pluginManifestRelative);
@@ -80,6 +92,8 @@ check(typeof pluginManifest.description === "string" && pluginManifest.descripti
 check(pluginManifest.description.includes("coprocessor"), "Cursor plugin description omits coprocessor");
 check(pluginManifest.description.includes("run_pin"), "Cursor plugin description omits run_pin");
 check(pluginManifest.description.includes("solve_task"), "Cursor plugin description omits solve_task");
+check(pluginManifest.repository === "https://github.com/barneywohl/huggingbay-coprocessor", "Cursor plugin repository is incorrect");
+check(pluginManifest.license === "MIT", "Cursor plugin license is missing");
 check(typeof pluginManifest.mcpServers === "string", "Cursor plugin must point to an MCP config path");
 
 const mcpConfigPath = resolvePluginAsset(pluginRoot, pluginManifest.mcpServers, "Cursor plugin MCP path");
@@ -94,21 +108,53 @@ const grokConfig = readJson("connectors/grok-custom-connector.json");
 sameArray(grokConfig.allowed_tools, expectedTools, "Grok allowed_tools");
 check(grokConfig.server_url === canonicalMcpUrl, "Grok server_url is incorrect");
 check(grokConfig.authorization === "$BAY_RUN_TOKEN", "Grok authorization must remain an environment placeholder");
+check(!Object.keys(grokConfig.headers ?? {}).some((key) => key.toLowerCase() === "authorization"), "Grok headers must not contain a bearer credential");
 
 const cursorInstall = readJson("connectors/cursor-install.json");
 sameArray(cursorInstall.expected_tools, expectedTools, "Cursor expected_tools");
-check(cursorInstall.config?.url === canonicalMcpUrl, "Cursor install URL is incorrect");
+check(
+  Object.keys(cursorInstall.config ?? {}).length === 1 &&
+    cursorInstall.config.url === canonicalMcpUrl,
+  "Cursor install config must be URL-only and use the canonical endpoint",
+);
 check(cursorInstall.config_base64 === Buffer.from(JSON.stringify(cursorInstall.config), "utf8").toString("base64"), "Cursor install payload does not match config");
-check(cursorInstall.deeplink.endsWith(`config=${cursorInstall.config_base64}`), "Cursor deeplink does not match config payload");
+check(cursorInstall.deeplink === `cursor://anysphere.cursor-deeplink/mcp/install?name=bay-run&config=${cursorInstall.config_base64}`, "Cursor deeplink does not match the documented install-link format");
+check(cursorInstall.verification?.privacy === privacyUrl, "Cursor install privacy link is incorrect");
+check(cursorInstall.verification?.data_policy === dataPolicyUrl, "Cursor install data-policy link is incorrect");
 
 const cursorMcp = readJson("connectors/cursor-mcp.json");
-check(cursorMcp.mcpServers?.["bay-run"]?.url === canonicalMcpUrl, "Cursor MCP example URL is incorrect");
+const cursorServer = cursorMcp.mcpServers?.["bay-run"];
+check(
+  Object.keys(cursorServer ?? {}).length === 1 && cursorServer.url === canonicalMcpUrl,
+  "Cursor MCP example must be URL-only and use the canonical endpoint",
+);
+
+const decisionPolicy = readJson("connectors/decision-policy.json");
+sameArray(decisionPolicy.allowed_tools, expectedTools, "Decision policy allowed_tools");
+check(decisionPolicy.failure_mode?.mode === "fail-closed", "Decision policy must fail closed");
+check(decisionPolicy.failure_mode?.fail_open_configured === false, "Decision policy must not configure fail-open behavior");
+check(decisionPolicy.privacy?.privacy_url === privacyUrl, "Decision policy privacy link is incorrect");
+check(decisionPolicy.privacy?.data_policy_url === dataPolicyUrl, "Decision policy data-policy link is incorrect");
 
 const readme = readText("README.md");
 const security = readText("SECURITY.md");
+const connectorDocs = [
+  ["connectors/README.md", readText("connectors/README.md")],
+  ["connectors/SUBMISSION.md", readText("connectors/SUBMISSION.md")],
+  ["connectors/grok-custom-connector.md", readText("connectors/grok-custom-connector.md")],
+  ["connectors/cursor-mcp.md", readText("connectors/cursor-mcp.md")],
+];
 check(readme.includes("This is the fail-closed policy."), "README fail-closed wording is missing");
+check(readme.includes(privacyUrl), "README privacy link is missing");
+check(readme.includes(dataPolicyUrl), "README data-policy link is missing");
+for (const [path, contents] of connectorDocs) {
+  check(contents.includes(privacyUrl), `${path} privacy link is missing`);
+  check(contents.includes(dataPolicyUrl), `${path} data-policy link is missing`);
+  check(/fail[- ]closed/i.test(contents), `${path} fail-closed wording is missing`);
+}
 check(security.includes("fails closed by default"), "SECURITY.md fail-closed wording is missing");
 check(/Never commit a bearer, API key, private key, or provider\s+credential/.test(security), "SECURITY.md credential-safety wording is missing");
+check(readJson("package.json").version === "0.1.5", "package version must remain 0.1.5");
 
 const trackedFiles = execFileSync("git", ["ls-files", "-co", "--exclude-standard", "-z"], { cwd: repoRoot })
   .toString("utf8")

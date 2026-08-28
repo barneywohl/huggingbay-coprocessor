@@ -17,7 +17,7 @@
   "files": [
     {
       "path": ".cursor-plugin/marketplace.json",
-      "sha256": "1682185c12dc596d1377cd5eed0ac2952644ff831085bbbdae97efd380dc5543"
+      "sha256": "dfac1367441a5486b759fd716835e80282ddc900d54f77f09993830d77c45208"
     },
     {
       "path": "LICENSE",
@@ -25,7 +25,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "d9055d38f938341a61c764c2b975213d7a3ad66deb60c8e6973205a32a18d3e6"
+      "sha256": "67d8ed3af54262db911b9e88fc56e48e0639b2017b5e956c5fb3b03cda4aebf8"
     },
     {
       "path": "SECURITY.md",
@@ -33,15 +33,15 @@
     },
     {
       "path": "connectors/README.md",
-      "sha256": "32189b0deeba62d87e8d2f96deafa3252aec57599da9da08e9e7e8907d9fce22"
+      "sha256": "9c9a45debb50aadb00cd677fbf8d70f2d67bfec99771e8952a6ceb168741230d"
     },
     {
       "path": "connectors/SUBMISSION.md",
-      "sha256": "3219c2488f14a1fa4536cb9e60378e87c02ad91d975fceb357d5690750f1a60f"
+      "sha256": "f596b437af1cda6b29ee3ee66e7cab7da8b7f605d8112316f3ff91ceb664c70d"
     },
     {
       "path": "connectors/cursor-install.json",
-      "sha256": "a68b9a25c01a82af6209bc4c667e644c9067017afb1b22c8d303f96f3cc30d02"
+      "sha256": "20970a48e916c7f43f8929276b3240bc7e8fe843d802f9648af31e65356c29fc"
     },
     {
       "path": "connectors/cursor-mcp.json",
@@ -49,11 +49,11 @@
     },
     {
       "path": "connectors/cursor-mcp.md",
-      "sha256": "7024b1004b6f691bf7531c51d8cba34b9a9dece076de46efa6480aefadd8a1d5"
+      "sha256": "9478bbab594a5cf743cfcf3032094ed2d5f3e240ef7ebd6587de8a5c767b3efa"
     },
     {
       "path": "connectors/cursor-plugin/.cursor-plugin/plugin.json",
-      "sha256": "03cb21f20fb0db063ff22f60699aeef34960480ca4906140815b2a989242c841"
+      "sha256": "f6d44aa3b022ffef598af88fd19491c7be8ce725f0752c1cbda60199802ea4af"
     },
     {
       "path": "connectors/cursor-plugin/mcp.json",
@@ -61,15 +61,15 @@
     },
     {
       "path": "connectors/decision-policy.json",
-      "sha256": "5ea36428ad29962d047d3e05dc0f3809942fce5a0c90aa6a5d2fe3b477ce6aa8"
+      "sha256": "ad90aa1b91887f1e32375abab52b279ef4e96f88c3ebb8b2d2faecf5e86569a1"
     },
     {
       "path": "connectors/grok-custom-connector.json",
-      "sha256": "48da6951e16e53a07d5f6678945990ae9ff89d1720d58d44da5bcbe1d79797de"
+      "sha256": "673a4231598da7db2a1139f0f81c585c7f81a63834ee807bb8f3110d5ea79ef5"
     },
     {
       "path": "connectors/grok-custom-connector.md",
-      "sha256": "592131999b341553170c4c62ade96625322c64b9282b7293055481120f1a54dc"
+      "sha256": "d22474e37288f7b1cbb1d18c8729e8337a80105f53b0f3e0d6ca7aeb375dc255"
     },
     {
       "path": "examples/anthropic-style.mjs",
@@ -85,7 +85,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "9eea039da58e0af5c3590f6f942932cdc87bc495c7cba32c215cc9845032b426"
+      "sha256": "b55b65ca8101b301fbd8f5f6d31e45d22665c6c2273dd8751b47fc06e6237872"
     },
     {
       "path": "src/index.d.ts",
@@ -97,7 +97,7 @@
     },
     {
       "path": "verification/validate-connectors.mjs",
-      "sha256": "f95383942f327ca5b54887d45b554886be810ee05a75f7f19fd0a20ba1286e36"
+      "sha256": "372a59cfdc0145e57004f4125877d4e0668e5166a434700e97a3cf1244054854"
     },
     {
       "path": "verification/verified-usage.mjs",

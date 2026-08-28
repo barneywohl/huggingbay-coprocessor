@@ -42,7 +42,7 @@
     "check": "node --check src/index.js",
     "test": "node --test test/*.test.mjs",
     "test:types": "npm exec --yes --package=typescript@7.0.2 -- tsc --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM --skipLibCheck test/types.fixture.ts",
-    "test:smoke": "node test/package-smoke.mjs",
+    "test:smoke": "node verification/verified-usage.mjs",
     "pack:dry-run": "npm pack --dry-run --json"
   },
   "repository": {

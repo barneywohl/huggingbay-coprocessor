@@ -26,11 +26,20 @@ plugin manifest and the same URL-only MCP definition.
 Keep the available tools bounded to:
 
 ```text
-coprocessor, run_pin, solve_task
+run_pin, solve_task, coprocessor
 ```
 
-Complete authentication through Cursor's supported OAuth or secret flow. Do
-not put a bearer, API key, private key, or provider credential in configuration.
+Complete authentication through Cursor's supported OAuth or secret flow. The
+checked-in MCP object is intentionally URL-only: do not add headers, env
+values, OAuth client material, a bearer, API key, private key, or provider
+credential to configuration.
+
+Fail closed on an unavailable or unauthenticated server, a malformed response,
+or a missing or unsupported action. Stop without generation, tool use, or raw
+result handling; never treat an MCP or policy failure as `allow`.
+
+Before sending data, read Bay Run's [privacy policy](https://run.huggingbay.xyz/privacy)
+and [data policy](https://run.huggingbay.xyz/.well-known/data-policy.json).
 
 ## Decision handling
 

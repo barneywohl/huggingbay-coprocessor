@@ -4,9 +4,9 @@
   "server_label": "bay_run",
   "server_description": "Start with Bay Run's bounded Guard-first coprocessor; use run_pin for a known canonical Pin and solve_task only as the open-ended fallback. Return execution evidence. The coprocessor accepts optional omit_raw_result, which defaults true; set omit_raw_result=false only for an explicit raw-evidence opt-in.",
   "allowed_tools": [
-    "coprocessor",
     "run_pin",
-    "solve_task"
+    "solve_task",
+    "coprocessor"
   ],
   "authorization": "$BAY_RUN_TOKEN",
   "headers": {

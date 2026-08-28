@@ -4,12 +4,22 @@
     "name": "Hugging Bay"
   },
   "metadata": {
-    "description": "Public Cursor plugins for Hugging Bay integrations."
+    "description": "Public Cursor plugins for Hugging Bay integrations, including the Bay Run decision-first MCP connector."
   },
   "plugins": [
     {
       "name": "bay-run",
-      "source": "connectors/cursor-plugin"
+      "source": "connectors/cursor-plugin",
+      "description": "Connect Cursor to Bay Run's URL-only Streamable HTTP MCP server with exactly three bounded tools: run_pin, solve_task, and coprocessor.",
+      "homepage": "https://github.com/barneywohl/huggingbay-coprocessor",
+      "repository": "https://github.com/barneywohl/huggingbay-coprocessor",
+      "license": "MIT",
+      "keywords": [
+        "mcp",
+        "bay-run",
+        "decision",
+        "guard"
+      ]
     }
   ]
 }

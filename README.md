@@ -13,6 +13,20 @@ npm install @huggingbay/coprocessor
 
 For a local checkout, run `npm install .` from the repository root.
 
+## Grok and Cursor connector assets
+
+This public repository also contains source-only Grok and Cursor connector
+assets. They do not submit a provider listing, create credentials, or claim
+provider approval. The checked-in provider allowlist is exactly
+`["run_pin", "solve_task", "coprocessor"]`; the Cursor MCP configuration is
+URL-only at `https://run.huggingbay.xyz/mcp/`.
+
+See the [connector overview](connectors/README.md), [Grok setup](connectors/grok-custom-connector.md),
+[Cursor setup](connectors/cursor-mcp.md), and [submission guidance](connectors/SUBMISSION.md).
+The connector policy fails closed on unavailable, unauthenticated, or
+malformed MCP responses. Before sending data, read Bay Run's [privacy policy](https://run.huggingbay.xyz/privacy)
+and [data policy](https://run.huggingbay.xyz/.well-known/data-policy.json).
+
 ## Contract
 
 `withBayRun(generate, options)` calls `POST /v1/coprocessor` before generation.
@@ -280,9 +294,11 @@ A caller-provided `AbortSignal` is authoritative: cancellation throws a
 `BayRunTransportError` with code `request_cancelled` and never enters fail-open
 or provider generation. The independent request deadline remains `timeout`.
 
-Read Bay Run's current data policy before sending sensitive data. This wrapper
-does not claim that a receipt proves answer correctness or that Guard is a
-universal safety classifier. Signed receipt and decision-evidence payloads use
+Read Bay Run's [privacy policy](https://run.huggingbay.xyz/privacy) and current
+[data policy](https://run.huggingbay.xyz/.well-known/data-policy.json) before
+sending sensitive data. This wrapper does not claim that a receipt proves
+answer correctness or that Guard is a universal safety classifier. Signed
+receipt and decision-evidence payloads use
 the server's `pin_protocol._canonical`: sorted keys, compact separators,
 `default=str`, and `ensure_ascii=False`, with valid Unicode emitted as UTF-8.
 Child idempotency keys intentionally use the separate Python default
@@ -296,7 +312,7 @@ reproduced.
 ```bash
 node --check src/index.js
 npm run pack:dry-run
-node verification/verified-usage.mjs
+npm run test:smoke
 ```
 
 The verification example uses an in-process HTTP failure stub. It does not

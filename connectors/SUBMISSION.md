@@ -9,8 +9,8 @@ and no approval is claimed by this repository.
 2. In [Grok Connectors](https://grok.com/connectors), add a Custom MCP connector.
 3. Use `https://run.huggingbay.xyz/mcp/` and complete the provider's supported
    authentication flow.
-4. Confirm that the focused tool set is `coprocessor`, `run_pin`, and
-   `solve_task`, and exercise a safe, non-sensitive request.
+4. Confirm that the focused tool set is exactly `run_pin`, `solve_task`, and
+   `coprocessor`, and exercise a safe, non-sensitive request.
 
 xAI's documented Custom MCP flow does not define a public third-party catalog
 submission process. Do not claim catalog submission or approval.
@@ -25,6 +25,15 @@ submission process. Do not claim catalog submission or approval.
 4. Treat Cursor review and approval as separate provider evidence; do not infer
    either from a successful local test or a submitted link.
 
+## Privacy and failure handling
+
+Before sending any user text or documents, read Bay Run's [privacy policy](https://run.huggingbay.xyz/privacy)
+and [data policy](https://run.huggingbay.xyz/.well-known/data-policy.json).
+The checked-in provider assets use a fail-closed decision policy: an
+authentication, transport, malformed-response, or missing-action failure stops
+the workflow and is never treated as `allow`. Credentials belong only in the
+provider's supported OAuth or runtime secret flow.
+
 ## Revalidation before external action
 
 This source export encodes the branch's intended three-tool boundary; it is not
@@ -34,6 +43,6 @@ pause and reconcile the connector files before any provider action.
 Re-fetch the [connector discovery document](https://run.huggingbay.xyz/.well-known/connectors.json),
 the [server card](https://run.huggingbay.xyz/.well-known/mcp/server-card.json),
 and the live `tools/list` response from `https://run.huggingbay.xyz/mcp/`.
-Read the [data policy](https://run.huggingbay.xyz/.well-known/data-policy.json)
+Read the [privacy policy](https://run.huggingbay.xyz/privacy) and [data policy](https://run.huggingbay.xyz/.well-known/data-policy.json)
 before sending data. Keep all tokens and provider credentials in the supported
 runtime authentication flow; never copy them into this repository.

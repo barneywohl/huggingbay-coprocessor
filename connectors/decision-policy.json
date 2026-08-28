@@ -10,6 +10,22 @@
     "omit_raw_result": true,
     "raw_result_opt_in": "Set omit_raw_result=false only when receipt-bound raw evidence is explicitly required."
   },
+  "allowed_tools": [
+    "run_pin",
+    "solve_task",
+    "coprocessor"
+  ],
+  "failure_mode": {
+    "mode": "fail-closed",
+    "on_transport_or_auth_failure": "Stop; do not treat an unavailable or unauthenticated MCP response as allow.",
+    "on_malformed_or_missing_action": "Stop; do not generate, use tools, or read raw result data.",
+    "fail_open_configured": false
+  },
+  "privacy": {
+    "privacy_url": "https://run.huggingbay.xyz/privacy",
+    "data_policy_url": "https://run.huggingbay.xyz/.well-known/data-policy.json",
+    "before_use": "Read both links before sending user text or documents."
+  },
   "actions": {
     "allow": "Continue only within the caller's approved task and data policy.",
     "block": "Stop generation, tool use, and downstream execution for the input.",

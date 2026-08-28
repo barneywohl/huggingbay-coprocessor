@@ -6,16 +6,24 @@ contract, check the [Bay Run connector discovery document](https://run.huggingba
 and the [official xAI Custom MCP documentation](https://docs.x.ai/grok/connectors).
 
 Use `https://run.huggingbay.xyz/mcp/` as the MCP server URL and complete Grok's
-supported authentication flow. Keep only these tools enabled when the client
-offers a per-tool selector:
+supported authentication flow. The official Grok flow is manual URL entry;
+this JSON is a bounded reference asset, not an xAI catalog-import format. Keep
+only these tools enabled when the client offers a per-tool selector:
 
 ```json
-["coprocessor", "run_pin", "solve_task"]
+["run_pin", "solve_task", "coprocessor"]
 ```
 
 The `$BAY_RUN_TOKEN` value in the JSON is an environment placeholder, not a
 credential. Do not replace it with a token in a repository or connector
 packet.
+
+Fail closed on an unavailable or unauthenticated server, a malformed response,
+or a missing or unsupported action. Stop without generation, tool use, or raw
+result handling; never treat an MCP or policy failure as `allow`.
+
+Before sending data, read Bay Run's [privacy policy](https://run.huggingbay.xyz/privacy)
+and [data policy](https://run.huggingbay.xyz/.well-known/data-policy.json).
 
 ## Decision handling
 
