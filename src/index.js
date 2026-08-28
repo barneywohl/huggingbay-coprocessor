@@ -16,7 +16,7 @@ export const BAY_RUN_PRODUCTION_TRUST_V1 = Object.freeze({
 
 const DEFAULT_BASE_URL = "https://run.huggingbay.xyz";
 const DEFAULT_TIMEOUT_MS = 10_000;
-const SDK_HEADER = "@huggingbay/coprocessor/0.1.4";
+const SDK_HEADER = "@huggingbay/coprocessor/0.1.5";
 const COPROCESSOR_SCHEMA = "bay-run.coprocessor.v1";
 const GUARD_POLICY_SCHEMA = "bay-run.guard-policy.v1";
 const PIN_PROOF_SCHEMA = "bay-run.pin-proof.v1";
