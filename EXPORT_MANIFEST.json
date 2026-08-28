@@ -10,9 +10,17 @@
   "status": {
     "repository_created": true,
     "repository_pushed": true,
-    "npm_published": false,
+    "npm_published": true,
     "connector_submitted": false,
     "connector_approved": false
+  },
+  "npm_registry": {
+    "package": "@huggingbay/coprocessor",
+    "version": "0.1.5",
+    "tarball": "https://registry.npmjs.org/@huggingbay/coprocessor/-/coprocessor-0.1.5.tgz",
+    "shasum": "5eadea13548a59745836a6b30de07c69ed08639a",
+    "integrity": "sha512-eRpNxvgptGpk3fX3kRtuWEO6sFRlUt7HPWSJQQtM9evG7JiFZR/+6qkYa/tUFDHBUGERbdAXXvAriumg0si28A==",
+    "verified_at": "2026-08-28T16:53:09Z"
   },
   "files": [
     {
