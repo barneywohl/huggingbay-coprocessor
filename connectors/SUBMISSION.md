@@ -15,7 +15,9 @@ than a public catalog submission.
    `coprocessor`, and exercise a safe, non-sensitive request.
 
 xAI's documented Custom MCP flow does not define a public third-party catalog
-submission process. Do not claim catalog submission or approval.
+submission process. The operator's Custom MCP connection was verified connected
+on 2026-08-28 with exactly the three expected tools; see
+`grok-connection.json`. Do not claim catalog submission or approval.
 
 ## Cursor
 

@@ -27,6 +27,8 @@ Files in this directory:
 
 - `grok-custom-connector.json` and `grok-custom-connector.md`: Grok setup and
   bounded tool examples.
+- `grok-connection.json`: the verified Custom MCP connection state and exact
+  three-tool inventory; it does not claim xAI catalog submission or approval.
 - `cursor-mcp.json`, `cursor-install.json`, and `cursor-mcp.md`: Cursor setup,
   install-link, and decision-handling examples.
 - `cursor-plugin/`: the minimal source-only Cursor plugin manifest and remote

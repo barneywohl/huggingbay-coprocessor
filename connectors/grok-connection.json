@@ -1,0 +1,17 @@
+{
+  "schema": "huggingbay.connector-connection.v1",
+  "provider": "grok",
+  "kind": "custom_mcp",
+  "name": "Bay Run",
+  "server_url": "https://run.huggingbay.xyz/mcp/",
+  "verified_at": "2026-08-28T17:30:08Z",
+  "connection_status": "connected",
+  "enabled_tools": [
+    "coprocessor",
+    "run_pin",
+    "solve_task"
+  ],
+  "public_catalog_submission_claimed": false,
+  "provider_approval_claimed": false,
+  "evidence": "Grok displayed Connector added successfully, Bay Run Connected, and the exact three-tool inventory."
+}
