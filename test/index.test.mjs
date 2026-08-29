@@ -9,6 +9,7 @@ import test from "node:test";
 import {
   BAY_RUN_PRODUCTION_TRUST_V1,
   BayRunContractError,
+  BayRunInputError,
   anthropicAdapter,
   genericAdapter,
   openAICompatibleAdapter,
@@ -24,6 +25,17 @@ const DECISION_EVIDENCE_SCHEMA = "bay-run.pin-decision-evidence.v1";
 const DECISION_EVIDENCE_PROOF_SCHEMA = "bay-run.pin-decision-evidence-proof.v1";
 const POLICY_ID = "bay-run.canonical-pin-decision-policy.v1";
 const POLICY_DIGEST = `sha256:${"b".repeat(64)}`;
+const LIVE_POLICY_DIGEST =
+  "sha256:eb1808545f112b5bbfac4a519b2b555e0cf8960c765ac8599d6d27ca3ea565b2";
+const NEXT_POLICY_DIGEST =
+  "sha256:e38b084aabfdeb0f0ef136c719c437d378d95a80f5b1c86f155d2541afc69b06";
+const THIRD_POLICY_DIGEST = `sha256:${"c".repeat(64)}`;
+const BENIGN_TRACKING_REASON_CODE = "guard_benign_shipping_tracking";
+const BENIGN_OWNER_INTENT_REASON_CODE = "guard_benign_owner_intent";
+const PRODUCTION_POLICY_TRUST = {
+  trustedPolicyDigest: LIVE_POLICY_DIGEST,
+  trustedPolicyDigests: [LIVE_POLICY_DIGEST, NEXT_POLICY_DIGEST],
+};
 const NO_SPEND_FIELDS = new Set([
   "max_price_usd",
   "priced_cost_usd",
@@ -167,7 +179,7 @@ function makeReceipt(pinId, model, input, result, executionId) {
   };
 }
 
-function makeDecisionEvidence(receipt, decision) {
+function makeDecisionEvidence(receipt, decision, policyDigest = POLICY_DIGEST) {
   const payload = {
     schema: DECISION_EVIDENCE_SCHEMA,
     receipt_id: receipt.receipt_id,
@@ -177,21 +189,33 @@ function makeDecisionEvidence(receipt, decision) {
     result_sha256: receipt.result_sha256,
     decision_sha256: digestJson(decision),
     policy_contract_id: POLICY_ID,
-    policy_contract_digest: POLICY_DIGEST,
+    policy_contract_digest: policyDigest,
   };
   const evidenceProof = proof(payload, DECISION_EVIDENCE_PROOF_SCHEMA);
   return { ...payload, proof: evidenceProof };
 }
 
-function guardStage(input, action, sequence, { source = "user_text", documentIndex } = {}) {
-  const label = action === "allow" ? "SAFE" : "INJECTION";
+function guardStage(
+  input,
+  action,
+  sequence,
+  {
+    source = "user_text",
+    documentIndex,
+    policyDigest = POLICY_DIGEST,
+    label: labelOverride,
+    reasonCode: reasonCodeOverride,
+  } = {},
+) {
+  const label = labelOverride ?? (action === "allow" ? "SAFE" : "INJECTION");
   const score = action === "allow" ? 0.99 : 0.88;
   const reasonCode =
-    action === "allow"
+    reasonCodeOverride ??
+    (action === "allow"
       ? "guard_safe"
       : action === "block"
         ? "guard_injection_detected"
-        : "guard_result_requires_review";
+        : "guard_result_requires_review");
   const result = {
     model: "sdk-test-guard",
     labels: [{ label, score }],
@@ -218,7 +242,7 @@ function guardStage(input, action, sequence, { source = "user_text", documentInd
     execution_id: executionId,
     result,
     decision,
-    decision_evidence: makeDecisionEvidence(receipt, decision),
+    decision_evidence: makeDecisionEvidence(receipt, decision, policyDigest),
     receipt,
     no_spend_evidence: NO_SPEND,
     verified: false,
@@ -230,7 +254,7 @@ function guardStage(input, action, sequence, { source = "user_text", documentInd
   return stage;
 }
 
-function guardSummary(stage) {
+function guardSummary(stage, policyOverrides = {}) {
   const label = stage.result.labels[0].label;
   const score = stage.result.labels[0].score;
   const policy = {
@@ -241,6 +265,7 @@ function guardSummary(stage) {
     raw_score: score,
     confidence_threshold: 0.95,
     manipulation_indicators: [],
+    ...policyOverrides,
   };
   const summary = {
     pin_id: GUARD_PIN_ID,
@@ -254,7 +279,7 @@ function guardSummary(stage) {
   return summary;
 }
 
-function rerankStage(userText, documents, signal) {
+function rerankStage(userText, documents, signal, policyDigest = POLICY_DIGEST) {
   const rows =
     signal === "ranked"
       ? [
@@ -314,7 +339,7 @@ function rerankStage(userText, documents, signal) {
     execution_id: executionId,
     result,
     decision,
-    decision_evidence: makeDecisionEvidence(receipt, decision),
+    decision_evidence: makeDecisionEvidence(receipt, decision, policyDigest),
     receipt,
     no_spend_evidence: NO_SPEND,
     verified: false,
@@ -351,9 +376,18 @@ function coprocessorResponse({
   documentActions,
   rerankSignal = "ranked",
   actionSafety = false,
+  policyDigest = POLICY_DIGEST,
+  guardLabel,
+  guardReasonCode,
+  guardPolicyOverrides,
 } = {}) {
   const hasDocuments = documents !== undefined;
-  const userStage = guardStage(userText, userAction, 1);
+  const userStage = guardStage(userText, userAction, 1, {
+    policyDigest,
+    label: guardLabel,
+    reasonCode: guardReasonCode,
+  });
+  const userSummary = guardSummary(userStage, guardPolicyOverrides);
   const documentStages = [];
   const documentSummaries = [];
   if (hasDocuments) {
@@ -362,7 +396,7 @@ function coprocessorResponse({
         documents[index],
         documentActions?.[index] ?? "allow",
         index + 2,
-        { source: "document", documentIndex: index },
+        { source: "document", documentIndex: index, policyDigest },
       );
       documentStages.push(stage);
       documentSummaries.push(guardSummary(stage));
@@ -372,7 +406,7 @@ function coprocessorResponse({
   let action = userAction;
   let reason = userAction === "allow" ? "guard_safe" : "guard_injection_detected";
   let decisiveStage = userStage;
-  let decisiveSummary = guardSummary(userStage);
+  let decisiveSummary = userSummary;
   const documentActionsResolved = documentStages.map(
     (stage) => stage.decision.action,
   );
@@ -398,7 +432,7 @@ function coprocessorResponse({
   } else if (actionSafety && userAction === "allow") {
     action = "escalate";
   } else if (hasDocuments) {
-    const ranked = rerankStage(userText, documents, rerankSignal);
+    const ranked = rerankStage(userText, documents, rerankSignal, policyDigest);
     rerank = ranked.summary;
     rerankEvidence = ranked.stage;
     action = rerankSignal === "ranked" ? "allow" : "escalate";
@@ -450,6 +484,21 @@ function coprocessorResponse({
   return response;
 }
 
+function benignGuardResponse({
+  reasonCode,
+  indicatorField,
+  indicator,
+  policyDigest = POLICY_DIGEST,
+}) {
+  return coprocessorResponse({
+    userText: "Benign exception test input.",
+    guardLabel: "INJECTION",
+    guardReasonCode: reasonCode,
+    policyDigest,
+    guardPolicyOverrides: { [indicatorField]: [indicator] },
+  });
+}
+
 function wireJson(value) {
   return canonicalJson(value);
 }
@@ -475,10 +524,10 @@ function guardedFor(response, generate, options = {}) {
   });
 }
 
-async function assertContractFailure(response, input = {}) {
+async function assertContractFailure(response, input = {}, options = {}) {
   const guarded = guardedFor(response, () => {
     throw new Error("generation must not run after a malformed contract");
-  });
+  }, options);
   await assert.rejects(
     guarded({ input: input.userText ?? "Find reset help", documents: input.documents }),
     (error) => error instanceof BayRunContractError,
@@ -487,11 +536,192 @@ async function assertContractFailure(response, input = {}) {
 
 test("BAY_RUN_PRODUCTION_TRUST_V1 stays immutable and explicit", () => {
   assert.equal(Object.isFrozen(BAY_RUN_PRODUCTION_TRUST_V1), true);
+  assert.equal(Object.isFrozen(BAY_RUN_PRODUCTION_TRUST_V1.trustedPolicyDigests), true);
   assert.equal(BAY_RUN_PRODUCTION_TRUST_V1.trustedKeyId, "bay-run-pin-v1");
+  assert.equal(BAY_RUN_PRODUCTION_TRUST_V1.trustedPolicyDigest, LIVE_POLICY_DIGEST);
+  assert.deepEqual(BAY_RUN_PRODUCTION_TRUST_V1.trustedPolicyDigests, [
+    LIVE_POLICY_DIGEST,
+    NEXT_POLICY_DIGEST,
+  ]);
   assert.throws(() => {
     BAY_RUN_PRODUCTION_TRUST_V1.trustedKeyId = "untrusted";
   }, TypeError);
+  assert.throws(() => {
+    BAY_RUN_PRODUCTION_TRUST_V1.trustedPolicyDigests[0] = THIRD_POLICY_DIGEST;
+  }, TypeError);
 });
+
+test("policy trust rejects implicit, empty, malformed, and conflicting configuration", () => {
+  const base = { ...TEST_TRUST, adapter: genericAdapter };
+  const { trustedPolicyDigest: _trustedPolicyDigest, ...withoutSingular } = base;
+  const invalidOptions = [
+    withoutSingular,
+    { ...base, trustedPolicyDigest: "" },
+    { ...base, trustedPolicyDigests: [] },
+    { ...base, trustedPolicyDigests: ["not-a-digest"] },
+    { ...base, trustedPolicyDigests: [POLICY_DIGEST, POLICY_DIGEST] },
+    {
+      ...base,
+      trustedPolicyDigest: THIRD_POLICY_DIGEST,
+      trustedPolicyDigests: [LIVE_POLICY_DIGEST, NEXT_POLICY_DIGEST],
+    },
+  ];
+  for (const options of invalidOptions) {
+    assert.throws(
+      () => withBayRun(() => "unused", options),
+      (error) => error instanceof BayRunInputError && error.code === "invalid_policy_trust",
+    );
+  }
+});
+
+test("explicit policy digest lists are copied before verification", async () => {
+  const acceptedDigests = [LIVE_POLICY_DIGEST, NEXT_POLICY_DIGEST];
+  const response = coprocessorResponse({ policyDigest: LIVE_POLICY_DIGEST });
+  const guarded = guardedFor(response, () => "generated", {
+    trustedPolicyDigest: undefined,
+    trustedPolicyDigests: acceptedDigests,
+  });
+  acceptedDigests[0] = THIRD_POLICY_DIGEST;
+  const outcome = await guarded({ input: "Find reset help" });
+  assert.equal(outcome.status, "generated");
+});
+
+test("policy rotation accepts the live and reviewed next-server digests", async () => {
+  for (const policyDigest of [LIVE_POLICY_DIGEST, NEXT_POLICY_DIGEST]) {
+    const response = coprocessorResponse({ policyDigest });
+    const guarded = guardedFor(response, () => "generated", {
+      trustedPolicyDigest: LIVE_POLICY_DIGEST,
+      trustedPolicyDigests: [LIVE_POLICY_DIGEST, NEXT_POLICY_DIGEST],
+    });
+    const outcome = await guarded({ input: "Find reset help" });
+    assert.equal(outcome.status, "generated");
+  }
+});
+
+test("policy rotation rejects a third digest", async () => {
+  const response = coprocessorResponse({ policyDigest: THIRD_POLICY_DIGEST });
+  const guarded = guardedFor(response, () => {
+    throw new Error("generation must not run after an untrusted policy digest");
+  }, {
+    trustedPolicyDigest: LIVE_POLICY_DIGEST,
+    trustedPolicyDigests: [LIVE_POLICY_DIGEST, NEXT_POLICY_DIGEST],
+  });
+  await assert.rejects(
+    guarded({ input: "Find reset help" }),
+    (error) => error instanceof BayRunContractError && error.code === "policy_mismatch",
+  );
+});
+
+const BENIGN_GUARD_EXCEPTIONS = [
+  {
+    name: "shipping tracking",
+    reasonCode: BENIGN_TRACKING_REASON_CODE,
+    indicatorField: "benign_tracking_indicators",
+    indicator: "whole_request_shipping_status",
+    policyDigest: LIVE_POLICY_DIGEST,
+  },
+  {
+    name: "owner intent",
+    reasonCode: BENIGN_OWNER_INTENT_REASON_CODE,
+    indicatorField: "benign_owner_intent_indicators",
+    indicator: "whole_request_setup_instruction",
+    policyDigest: NEXT_POLICY_DIGEST,
+  },
+];
+
+test("shipping tracking exception accepts both rotated policy digests", async () => {
+  const shipping = BENIGN_GUARD_EXCEPTIONS[0];
+  for (const policyDigest of [LIVE_POLICY_DIGEST, NEXT_POLICY_DIGEST]) {
+    const response = benignGuardResponse({ ...shipping, policyDigest });
+    const outcome = await guardedFor(response, () => "generated", PRODUCTION_POLICY_TRUST)({
+      input: "Benign exception test input.",
+    });
+    assert.equal(outcome.status, "generated");
+    assert.equal(outcome.decision.reason_code, BENIGN_TRACKING_REASON_CODE);
+  }
+});
+
+test("owner-intent exception rejects the live policy digest", async () => {
+  const ownerIntent = BENIGN_GUARD_EXCEPTIONS[1];
+  const response = benignGuardResponse({
+    ...ownerIntent,
+    policyDigest: LIVE_POLICY_DIGEST,
+  });
+  const guarded = guardedFor(response, () => {
+    throw new Error("generation must not run for an owner-intent/live-digest mismatch");
+  }, PRODUCTION_POLICY_TRUST);
+  await assert.rejects(
+    guarded({ input: "Benign exception test input." }),
+    (error) => error instanceof BayRunContractError && error.code === "guard_policy_mismatch",
+  );
+});
+
+for (const exception of BENIGN_GUARD_EXCEPTIONS) {
+  test(`allows the signed ${exception.name} INJECTION exception`, async () => {
+    const response = benignGuardResponse(exception);
+    const outcome = await guardedFor(response, () => "generated", PRODUCTION_POLICY_TRUST)({
+      input: "Benign exception test input.",
+    });
+
+    assert.equal(outcome.status, "generated");
+    assert.equal(outcome.decision.action, "allow");
+    assert.equal(outcome.decision.reason_code, exception.reasonCode);
+    assert.equal(outcome.context.bayRunResponse.guard.label, "INJECTION");
+    assert.equal(outcome.context.bayRunResponse.guard.action, "allow");
+    assert.deepEqual(
+      outcome.context.bayRunResponse.guard.policy[exception.indicatorField],
+      [exception.indicator],
+    );
+  });
+}
+
+for (const exception of BENIGN_GUARD_EXCEPTIONS) {
+  const mutations = [
+    ["missing reason", (policy) => {
+      delete policy.reason_code;
+    }],
+    ["unknown reason", (policy) => {
+      policy.reason_code = "guard_benign_other";
+    }],
+    ["missing indicators", (policy) => {
+      delete policy[exception.indicatorField];
+    }],
+    ["empty indicators", (policy) => {
+      policy[exception.indicatorField] = [];
+    }],
+    ["wrong indicators", (policy) => {
+      policy[exception.indicatorField] = [42];
+    }],
+    ["blank indicators", (policy) => {
+      policy[exception.indicatorField] = [" "];
+    }],
+    ["nonempty manipulation indicators", (policy) => {
+      policy.manipulation_indicators = ["instruction_override"];
+    }],
+    ["third exception", (policy) => {
+      delete policy[exception.indicatorField];
+      policy.reason_code = "guard_benign_other";
+      policy.benign_other_indicators = ["unreviewed_exception"];
+    }],
+    ["signed reason mismatch", (policy) => {
+      const other = exception.reasonCode === BENIGN_TRACKING_REASON_CODE
+        ? BENIGN_GUARD_EXCEPTIONS[1]
+        : BENIGN_GUARD_EXCEPTIONS[0];
+      delete policy[exception.indicatorField];
+      policy.reason_code = other.reasonCode;
+      policy[other.indicatorField] = [other.indicator];
+    }],
+  ];
+  for (const [mutationName, mutate] of mutations) {
+    test(`fails closed on ${exception.name} exception with ${mutationName}`, async () => {
+      const response = benignGuardResponse(exception);
+      mutate(response.guard.policy);
+      await assertContractFailure(response, {
+        userText: "Benign exception test input.",
+      }, PRODUCTION_POLICY_TRUST);
+    });
+  }
+}
 
 test("withBayRun guards every document and exposes ranked documents only after all allow", async () => {
   const documents = ["Reset passwords in Settings.", "Invoices are under Billing."];

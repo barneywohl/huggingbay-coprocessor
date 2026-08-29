@@ -73,9 +73,14 @@ documents and pauses for review.
 
 These signatures attest to the declared binding and server metadata only. They
 do not prove execution, code derivation, result truth, answer quality, or safety.
-The four trust pins are mandatory at construction time, including with
-`failClosed: false`; the SDK has no implicit signer or policy defaults. The
-public production values are shown explicitly below for configuration examples:
+The three scalar trust pins and an explicit policy digest configuration are
+mandatory at construction time, including with `failClosed: false`; the SDK
+has no implicit signer or policy defaults. The legacy singular
+`trustedPolicyDigest` remains supported for one-digest callers. For a rotation,
+`trustedPolicyDigests` is an explicit non-empty list of exact accepted digests;
+the SDK copies and freezes it, and when both fields are supplied the singular
+digest must be included in that list. The public production values are shown
+explicitly below for configuration examples:
 
 ```js
 trustedKeyId: "bay-run-pin-v1",
@@ -84,9 +89,26 @@ trustedPublicKeySha256:
 trustedPolicyId: "bay-run.canonical-pin-decision-policy.v1",
 trustedPolicyDigest:
   "sha256:eb1808545f112b5bbfac4a519b2b555e0cf8960c765ac8599d6d27ca3ea565b2",
+trustedPolicyDigests: [
+  "sha256:eb1808545f112b5bbfac4a519b2b555e0cf8960c765ac8599d6d27ca3ea565b2",
+  "sha256:e38b084aabfdeb0f0ef136c719c437d378d95a80f5b1c86f155d2541afc69b06",
+],
 ```
 
-For an explicit, immutable v1 snapshot of those documented values, import
+The raw Guard result is preserved. An `allow` summary whose label is
+`INJECTION` is accepted only for the two code-owned policy exceptions
+`guard_benign_shipping_tracking` (with a non-empty string
+`benign_tracking_indicators` array) or `guard_benign_owner_intent` (with a
+non-empty string `benign_owner_intent_indicators` array), with no manipulation
+indicators. Shipping tracking may be signed under either accepted policy
+digest; owner intent is bound to the reviewed next-server digest
+`sha256:e38b084aabfdeb0f0ef136c719c437d378d95a80f5b1c86f155d2541afc69b06`.
+The signed decision reason must match the selected exception; missing,
+malformed, or third-party exceptions fail closed. The normal `SAFE` allow path
+remains unchanged.
+
+For an explicit, immutable v1 snapshot of those documented values—including
+the currently-live and reviewed next-server policy digests—import
 `BAY_RUN_PRODUCTION_TRUST_V1` and spread it into the options. It is never an
 implicit default; callers must opt in at each construction site, and a future
 pin rotation will use a new versioned export:
@@ -297,7 +319,8 @@ const outcome = await guardedGenerate({
 | `trustedKeyId` | required | Exact Ed25519 proof `kid`; there is no implicit signer. |
 | `trustedPublicKeySha256` | required | SHA-256 of the decoded raw 32-byte Ed25519 public key advertised by the proof. |
 | `trustedPolicyId` | required | Exact current decision-policy contract ID. |
-| `trustedPolicyDigest` | required | SHA-256 digest of the exact current decision-policy contract. |
+| `trustedPolicyDigest` | required when `trustedPolicyDigests` is omitted | Backward-compatible exact SHA-256 digest for a singleton policy trust configuration; when both fields are supplied, it must be in the accepted set. |
+| `trustedPolicyDigests` | unset | Explicit non-empty accepted SHA-256 digest list for policy rotation; every entry is validated, copied, and frozen. |
 | `token` / `apiKey` | unset | Sent as a bearer token. Do not put credentials in request data. |
 | `timeoutMs` | `10000` | Guard request deadline. No hidden retry. |
 | `failClosed` | `true` | Throw on Bay Run failure instead of generating without a decision. |

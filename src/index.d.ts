@@ -4,6 +4,10 @@ export const BAY_RUN_PRODUCTION_TRUST_V1: Readonly<{
   trustedPublicKeySha256: "sha256:a03d5e873393aa061bf993d0387dab61d5f39c4fc664fbeb0bded3c9485a2a5e";
   trustedPolicyId: "bay-run.canonical-pin-decision-policy.v1";
   trustedPolicyDigest: "sha256:eb1808545f112b5bbfac4a519b2b555e0cf8960c765ac8599d6d27ca3ea565b2";
+  trustedPolicyDigests: readonly [
+    "sha256:eb1808545f112b5bbfac4a519b2b555e0cf8960c765ac8599d6d27ca3ea565b2",
+    "sha256:e38b084aabfdeb0f0ef136c719c437d378d95a80f5b1c86f155d2541afc69b06",
+  ];
 }>;
 
 export type BayRunDecisionAction = "allow" | "block" | "escalate" | "abstain";
@@ -92,6 +96,20 @@ export type BayRunRequestAdapter<
   ) => TPreparedInput | Promise<TPreparedInput>;
 };
 
+type BayRunPolicyTrust =
+  | {
+      /** Exact caller-pinned decision policy contract digest. */
+      trustedPolicyDigest: string;
+      /** Explicit immutable accepted digest set for rotations. */
+      trustedPolicyDigests?: readonly string[];
+    }
+  | {
+      /** Exact caller-pinned decision policy contract digest. */
+      trustedPolicyDigest?: string;
+      /** Explicit immutable accepted digest set for rotations. */
+      trustedPolicyDigests: readonly string[];
+    };
+
 export type BayRunOptions<
   TInput,
   TPreparedInput = BayRunPreparedInput<TInput>,
@@ -105,8 +123,6 @@ export type BayRunOptions<
   trustedKeyId: string;
   /** Exact caller-pinned decision policy contract ID. */
   trustedPolicyId: string;
-  /** SHA-256 digest of the exact caller-pinned decision policy contract. */
-  trustedPolicyDigest: string;
   token?: string;
   apiKey?: string;
   timeoutMs?: number;
@@ -118,7 +134,7 @@ export type BayRunOptions<
     input: TPreparedInput,
     context: BayRunGenerationContext | BayRunBypassContext,
   ) => TPreparedInput | Promise<TPreparedInput>;
-};
+} & BayRunPolicyTrust;
 
 export type BayRunGenerate<TInput, TOutput> = (
   input: TInput,

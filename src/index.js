@@ -1,6 +1,9 @@
 import { createHash, createPublicKey, verify as verifySignature } from "node:crypto";
 import { isIP } from "node:net";
 
+const REVIEWED_NEXT_POLICY_DIGEST =
+  "sha256:e38b084aabfdeb0f0ef136c719c437d378d95a80f5b1c86f155d2541afc69b06";
+
 /**
  * Explicit production trust configuration for the v1 Pin proof contract.
  * This convenience snapshot is never applied implicitly by withBayRun.
@@ -12,11 +15,15 @@ export const BAY_RUN_PRODUCTION_TRUST_V1 = Object.freeze({
   trustedPolicyId: "bay-run.canonical-pin-decision-policy.v1",
   trustedPolicyDigest:
     "sha256:eb1808545f112b5bbfac4a519b2b555e0cf8960c765ac8599d6d27ca3ea565b2",
+  trustedPolicyDigests: Object.freeze([
+    "sha256:eb1808545f112b5bbfac4a519b2b555e0cf8960c765ac8599d6d27ca3ea565b2",
+    REVIEWED_NEXT_POLICY_DIGEST,
+  ]),
 });
 
 const DEFAULT_BASE_URL = "https://run.huggingbay.xyz";
 const DEFAULT_TIMEOUT_MS = 10_000;
-const SDK_HEADER = "@huggingbay/coprocessor/0.1.6";
+const SDK_HEADER = "@huggingbay/coprocessor/0.1.7";
 const COPROCESSOR_SCHEMA = "bay-run.coprocessor.v1";
 const GUARD_POLICY_SCHEMA = "bay-run.guard-policy.v1";
 const PIN_PROOF_SCHEMA = "bay-run.pin-proof.v1";
@@ -26,6 +33,10 @@ const CANONICAL_GUARD_PIN_ID = "route_00857aa05f863c2cdba0e908366b2cca";
 const CANONICAL_RERANK_PIN_ID = "route_f5411cdb31b03621742a58371fa95732";
 const DECISION_ACTIONS = new Set(["allow", "block", "escalate"]);
 const ACTION_SAFETY_REASON_CODE = "coprocessor_high_risk_action_requires_review";
+const BENIGN_TRACKING_REASON_CODE = "guard_benign_shipping_tracking";
+const BENIGN_OWNER_INTENT_REASON_CODE = "guard_benign_owner_intent";
+const BENIGN_TRACKING_INDICATORS_FIELD = "benign_tracking_indicators";
+const BENIGN_OWNER_INTENT_INDICATORS_FIELD = "benign_owner_intent_indicators";
 const ACTION_SAFETY_INDICATOR_PATTERNS = Object.freeze([
   [
     "privileged_shell_pipeline",
@@ -321,18 +332,51 @@ function normalizeTrustedProof(options) {
 function normalizeTrustedPolicy(options) {
   const policyId = options.trustedPolicyId;
   const policyDigest = options.trustedPolicyDigest;
+  const configuredDigests = options.trustedPolicyDigests;
   if (
     typeof policyId !== "string" ||
-    policyId.trim() === "" ||
-    typeof policyDigest !== "string" ||
-    !SHA256_DIGEST.test(policyDigest)
+    policyId.trim() === ""
   ) {
     throw new BayRunInputError(
-      "trustedPolicyId and trustedPolicyDigest are required; provide a non-empty policy ID and SHA-256 digest",
+      "trustedPolicyId is required; provide a non-empty policy ID",
       { code: "invalid_policy_trust" },
     );
   }
-  return Object.freeze({ id: policyId, digest: policyDigest });
+
+  const policyDigests =
+    configuredDigests === undefined ? [policyDigest] : configuredDigests;
+  if (!Array.isArray(policyDigests) || policyDigests.length === 0) {
+    throw new BayRunInputError(
+      "trustedPolicyDigest or trustedPolicyDigests must provide at least one SHA-256 digest",
+      { code: "invalid_policy_trust" },
+    );
+  }
+  if (
+    policyDigests.some(
+      (digest) => typeof digest !== "string" || !SHA256_DIGEST.test(digest),
+    )
+  ) {
+    throw new BayRunInputError(
+      "trustedPolicyDigest and trustedPolicyDigests must contain only SHA-256 digests",
+      { code: "invalid_policy_trust" },
+    );
+  }
+  if (new Set(policyDigests).size !== policyDigests.length) {
+    throw new BayRunInputError(
+      "trustedPolicyDigest and trustedPolicyDigests must not contain duplicates",
+      { code: "invalid_policy_trust" },
+    );
+  }
+  if (policyDigest !== undefined && !policyDigests.includes(policyDigest)) {
+    throw new BayRunInputError(
+      "trustedPolicyDigest must be included in trustedPolicyDigests",
+      { code: "invalid_policy_trust" },
+    );
+  }
+  return Object.freeze({
+    id: policyId,
+    digests: Object.freeze([...policyDigests]),
+  });
 }
 
 function canonicalJsonText(value) {
@@ -894,9 +938,9 @@ function validateDecisionEvidence(
       "policy_mismatch",
     );
   }
-  if (decisionEvidence.policy_contract_digest !== trustedPolicy.digest) {
+  if (!trustedPolicy.digests.includes(decisionEvidence.policy_contract_digest)) {
     invalidContract(
-      `${stageName}.decision_evidence policy digest does not match trusted configuration`,
+      `${stageName}.decision_evidence policy digest is not in trusted configuration`,
       "policy_mismatch",
     );
   }
@@ -1133,6 +1177,104 @@ function validateGuardPolicy(policy, guard, action) {
   }
 }
 
+function validateNonEmptyStringArray(value, name) {
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    value.some((item) => typeof item !== "string" || item.trim() === "")
+  ) {
+    invalidContract(`${name} must be a non-empty array of non-empty strings`, "guard_policy_invalid");
+  }
+}
+
+function validateInjectionAllowException(policy, summaryName, policyDigest) {
+  if (
+    !isRecord(policy) ||
+    policy.schema !== GUARD_POLICY_SCHEMA ||
+    policy.decision !== "allow" ||
+    policy.raw_label !== "INJECTION" ||
+    (policy.manipulation_indicators !== undefined &&
+      (!Array.isArray(policy.manipulation_indicators) ||
+        policy.manipulation_indicators.length !== 0))
+  ) {
+    invalidContract(
+      `${summaryName} allow with INJECTION requires a supported benign Guard exception`,
+      "guard_policy_mismatch",
+    );
+  }
+
+  const indicatorFields = new Set([
+    BENIGN_TRACKING_INDICATORS_FIELD,
+    BENIGN_OWNER_INTENT_INDICATORS_FIELD,
+  ]);
+  const unexpectedExceptionFields = Object.keys(policy).filter(
+    (field) => field.startsWith("benign_") && !indicatorFields.has(field),
+  );
+  if (unexpectedExceptionFields.length > 0) {
+    invalidContract(
+      `${summaryName}.policy has an unsupported benign Guard exception field`,
+      "guard_policy_mismatch",
+    );
+  }
+
+  const hasTrackingIndicators = Object.prototype.hasOwnProperty.call(
+    policy,
+    BENIGN_TRACKING_INDICATORS_FIELD,
+  );
+  const hasOwnerIntentIndicators = Object.prototype.hasOwnProperty.call(
+    policy,
+    BENIGN_OWNER_INTENT_INDICATORS_FIELD,
+  );
+  if (policy.reason_code === BENIGN_TRACKING_REASON_CODE) {
+    if (!hasTrackingIndicators || hasOwnerIntentIndicators) {
+      invalidContract(
+        `${summaryName}.policy shipping exception indicators are invalid`,
+        "guard_policy_mismatch",
+      );
+    }
+    validateNonEmptyStringArray(
+      policy[BENIGN_TRACKING_INDICATORS_FIELD],
+      `${summaryName}.policy.${BENIGN_TRACKING_INDICATORS_FIELD}`,
+    );
+    return;
+  }
+  if (policy.reason_code === BENIGN_OWNER_INTENT_REASON_CODE) {
+    if (
+      policyDigest !== undefined &&
+      policyDigest !== REVIEWED_NEXT_POLICY_DIGEST
+    ) {
+      invalidContract(
+        `${summaryName}.policy owner-intent exception requires the reviewed next-server policy digest`,
+        "guard_policy_mismatch",
+      );
+    }
+    if (!hasOwnerIntentIndicators || hasTrackingIndicators) {
+      invalidContract(
+        `${summaryName}.policy owner-intent exception indicators are invalid`,
+        "guard_policy_mismatch",
+      );
+    }
+    validateNonEmptyStringArray(
+      policy[BENIGN_OWNER_INTENT_INDICATORS_FIELD],
+      `${summaryName}.policy.${BENIGN_OWNER_INTENT_INDICATORS_FIELD}`,
+    );
+    return;
+  }
+  invalidContract(
+    `${summaryName}.policy has an unsupported benign Guard exception reason`,
+    "guard_policy_mismatch",
+  );
+}
+
+function validateGuardExceptionPolicyBinding(summary, summaryName, policyDigest) {
+  if (
+    summary.action === "allow" &&
+    summary.label.trim().toUpperCase() === "INJECTION"
+  ) {
+    validateInjectionAllowException(summary.policy, summaryName, policyDigest);
+  }
+}
+
 function actionSafetyIndicators(value) {
   if (typeof value !== "string") return [];
   return ACTION_SAFETY_INDICATOR_PATTERNS
@@ -1188,10 +1330,10 @@ function validateGuardSummary(
   }
   contractString(summary.label, `${summaryName}.label`);
   contractNumber(summary.score, `${summaryName}.score`);
-  if (
-    summary.action === "allow" &&
-    summary.label.trim().toUpperCase() !== "SAFE"
-  ) {
+  const normalizedLabel = summary.label.trim().toUpperCase();
+  if (summary.action === "allow" && normalizedLabel === "INJECTION") {
+    validateInjectionAllowException(summary.policy, summaryName);
+  } else if (summary.action === "allow" && normalizedLabel !== "SAFE") {
     invalidContract(
       `${summaryName} allow requires the canonical Guard SAFE label`,
       "guard_evidence_mismatch",
@@ -1354,6 +1496,11 @@ function validateDocumentGuards(body, evidence, documents, trustedProof, trusted
       decision,
       summary,
       `evidence.document_guards[${documentIndex}]`,
+    );
+    validateGuardExceptionPolicyBinding(
+      summary,
+      `document_guards[${documentIndex}]`,
+      stage.decision_evidence.policy_contract_digest,
     );
     actions.push(summary.action);
   }
@@ -1767,6 +1914,11 @@ function validateCoprocessorResponse(body, request, options) {
   const guardDecision = guardStage.decision;
   validateGuardDecision(guardDecision, body.guard, "evidence.guard");
   validateGuardStageResult(guardResult, body.guard, "evidence.guard");
+  validateGuardExceptionPolicyBinding(
+    body.guard,
+    "guard",
+    guardStage.decision_evidence.policy_contract_digest,
+  );
 
   if (guardSource === "document") {
     const decisiveStage = documentValidation.stages[guardDocumentIndex];
