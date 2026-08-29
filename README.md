@@ -32,24 +32,31 @@ and [data policy](https://run.huggingbay.xyz/.well-known/data-policy.json).
 ## Contract
 
 `withBayRun(generate, options)` calls `POST /v1/coprocessor` before generation.
-It honors the returned `decision.action`:
+It verifies the complete receipt-bound response and honors the returned top-level
+composite `action`; the signed Guard decision remains available unchanged in the
+generation context:
 
-- `allow`: optionally prepares the request with ranked documents, then invokes
-  the generator and returns `{ status: "generated", output, decision }`. If the
-  signed Rerank stage abstains (`signal: "no_signal"` and
-  `decision.action: "abstain"`), generation is paused and the result is instead
-  `{ status: "review_required" }`.
+- `allow`: only after `user_text` and every supplied document has an allow Guard
+  decision. It optionally prepares the request with ranked documents, then
+  invokes the generator and returns `{ status: "generated", output, decision }`.
 - `block`: does not invoke the generator and returns `{ status: "blocked" }`.
 - `escalate`: does not invoke the generator and returns the typed
-  `{ status: "review_required" }` result.
+  `{ status: "review_required" }` result. This includes a high-risk action-safety
+  overlay and a signed Rerank abstention; neither overlay rewrites the signed
+  Guard decision.
 - transport, timeout, HTTP, or malformed-contract failures throw by default.
   This is the fail-closed policy. Set `failClosed: false` only when the caller
   explicitly accepts a `{ status: "bypassed" }` generation result.
 
 Successful 2xx responses must be the complete `bay-run.coprocessor.v1` contract,
 including the canonical Guard Pin identity, matching Guard evidence and receipt
-identity, an authenticated `decision` and `decision_evidence` for every executed
-stage, and a consistent `next_call`. Receipt and decision-evidence proofs are
+identity, exact `source`/`document_index` rows for every caller-owned document,
+an authenticated `decision` and `decision_evidence` for every executed stage,
+and a consistent `next_call`. Document Guard actions are combined with
+`block > escalate > allow` precedence; every supplied document is guarded even
+when the user Guard or action-safety signal already blocks or escalates, and a
+decisive document row must be the first row at the highest severity. Receipt and
+decision-evidence proofs are
 verified as Ed25519 signatures against the caller's configured key ID and raw
 public-key digest. Decision evidence is also pinned to the caller's current
 policy ID and digest. `proof.key_scope` must be exactly `configured`.
@@ -59,7 +66,9 @@ response text as the provider handoff. The signed Rerank receipt binds the
 complete stage result through `result_sha256`; every returned `relevance_score`,
 `raw_score`, and `text` must also exactly match the corresponding receipt-bound
 result row. If one of these fields is present in only one representation, the
-SDK fails closed.
+SDK fails closed. Ranked documents are exposed only after every document Guard
+allows and Rerank returns a ranked signal; an abstention exposes no ranked
+documents and pauses for review.
 
 These signatures attest to the declared binding and server metadata only. They
 do not prove execution, code derivation, result truth, answer quality, or safety.
@@ -180,7 +189,10 @@ When documents are supplied, `outcome.context.rerankedDocuments` contains the
 ordered documents only when Bay Run returned a ranked signal. A signed Rerank
 abstention pauses with `status: "review_required"` and
 `outcome.decision.action === "abstain"`; the provider preparation and generator
-are not called. Built-in OpenAI
+are not called, while `outcome.context.decision.action` and the signed Guard
+evidence remain `allow`. A high-risk action-safety escalation similarly pauses
+without calling the provider; inspect `outcome.context.bayRunResponse.action_safety`
+for its bounded indicators. Built-in OpenAI
 and Anthropic adapters remove `bayRun`, `documents`, `idempotencyKey`, and
 `signal` before generation. To hand reranked documents to a provider, use
 `prepare`; it receives that provider-safe request plus the context. Reranking

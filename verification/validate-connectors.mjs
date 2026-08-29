@@ -109,6 +109,8 @@ sameArray(grokConfig.allowed_tools, expectedTools, "Grok allowed_tools");
 check(grokConfig.server_url === canonicalMcpUrl, "Grok server_url is incorrect");
 check(grokConfig.authorization === "$BAY_RUN_TOKEN", "Grok authorization must remain an environment placeholder");
 check(!Object.keys(grokConfig.headers ?? {}).some((key) => key.toLowerCase() === "authorization"), "Grok headers must not contain a bearer credential");
+check(grokConfig.server_description.includes("every supplied document"), "Grok description omits per-document Guarding");
+check(grokConfig.server_description.includes("block > escalate > allow"), "Grok description omits Guard precedence");
 
 const cursorInstall = readJson("connectors/cursor-install.json");
 sameArray(cursorInstall.expected_tools, expectedTools, "Cursor expected_tools");
@@ -135,6 +137,19 @@ check(decisionPolicy.failure_mode?.mode === "fail-closed", "Decision policy must
 check(decisionPolicy.failure_mode?.fail_open_configured === false, "Decision policy must not configure fail-open behavior");
 check(decisionPolicy.privacy?.privacy_url === privacyUrl, "Decision policy privacy link is incorrect");
 check(decisionPolicy.privacy?.data_policy_url === dataPolicyUrl, "Decision policy data-policy link is incorrect");
+sameArray(
+  decisionPolicy.coprocessor_contract?.document_precedence,
+  ["block", "escalate", "allow"],
+  "Coprocessor document precedence",
+);
+check(
+  decisionPolicy.coprocessor_contract?.document_mapping?.includes("exact document_index"),
+  "Decision policy omits exact document mapping",
+);
+check(
+  decisionPolicy.coprocessor_contract?.rerank_gate?.includes("every Guard action is allow"),
+  "Decision policy omits the all-allow rerank gate",
+);
 
 const readme = readText("README.md");
 const security = readText("SECURITY.md");
@@ -152,9 +167,23 @@ for (const [path, contents] of connectorDocs) {
   check(contents.includes(dataPolicyUrl), `${path} data-policy link is missing`);
   check(/fail[- ]closed/i.test(contents), `${path} fail-closed wording is missing`);
 }
+check(readme.includes("every supplied document"), "README omits per-document Guarding");
+check(readme.includes("block > escalate > allow"), "README omits Guard precedence");
+check(readme.includes("high-risk action-safety"), "README omits action-safety escalation");
+const contractConnectorDocs = connectorDocs.filter(
+  ([path]) => path !== "connectors/SUBMISSION.md",
+);
+check(
+  contractConnectorDocs.every(([, contents]) => contents.includes("document_guards")),
+  "connector docs omit document Guard evidence mapping",
+);
+check(
+  contractConnectorDocs.every(([, contents]) => contents.includes("block > escalate > allow")),
+  "connector docs omit Guard precedence",
+);
 check(security.includes("fails closed by default"), "SECURITY.md fail-closed wording is missing");
 check(/Never commit a bearer, API key, private key, or provider\s+credential/.test(security), "SECURITY.md credential-safety wording is missing");
-check(readJson("package.json").version === "0.1.5", "package version must remain 0.1.5");
+check(readJson("package.json").version === "0.1.6", "package version must remain 0.1.6");
 
 const trackedFiles = execFileSync("git", ["ls-files", "-co", "--exclude-standard", "-z"], { cwd: repoRoot })
   .toString("utf8")

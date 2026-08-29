@@ -1,8 +1,8 @@
 {
   "name": "bay-run-coprocessor",
   "displayName": "Bay Run Coprocessor",
-  "version": "0.1.5",
-  "description": "Guard-first MCP coprocessor for prompt-injection screening, specialist routing, and retrieval reranking before caller-owned generation.",
+  "version": "0.1.6",
+  "description": "Guard-first MCP coprocessor that independently screens user_text and every caller-owned document even when another Guard or action-safety signal already blocks or escalates, combines block > escalate > allow, and reranks only after all Guards allow before caller-owned generation.",
   "author": {
     "name": "Hugging Bay"
   },

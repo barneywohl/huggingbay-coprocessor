@@ -29,6 +29,7 @@ export type BayRunCoprocessorResponse = Record<string, unknown>;
 
 export type BayRunGenerationContext = {
   bayRunAvailable: true;
+  /** The receipt-bound Guard decision; inspect bayRunResponse.action for composite overlays. */
   decision: BayRunDecision;
   bayRunResponse: BayRunCoprocessorResponse;
   originalDocuments?: readonly string[];

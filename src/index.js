@@ -16,7 +16,7 @@ export const BAY_RUN_PRODUCTION_TRUST_V1 = Object.freeze({
 
 const DEFAULT_BASE_URL = "https://run.huggingbay.xyz";
 const DEFAULT_TIMEOUT_MS = 10_000;
-const SDK_HEADER = "@huggingbay/coprocessor/0.1.5";
+const SDK_HEADER = "@huggingbay/coprocessor/0.1.6";
 const COPROCESSOR_SCHEMA = "bay-run.coprocessor.v1";
 const GUARD_POLICY_SCHEMA = "bay-run.guard-policy.v1";
 const PIN_PROOF_SCHEMA = "bay-run.pin-proof.v1";
@@ -25,6 +25,18 @@ const PIN_ABSTENTION_SCHEMA = "bay-run.pin-abstention.v1";
 const CANONICAL_GUARD_PIN_ID = "route_00857aa05f863c2cdba0e908366b2cca";
 const CANONICAL_RERANK_PIN_ID = "route_f5411cdb31b03621742a58371fa95732";
 const DECISION_ACTIONS = new Set(["allow", "block", "escalate"]);
+const ACTION_SAFETY_REASON_CODE = "coprocessor_high_risk_action_requires_review";
+const ACTION_SAFETY_INDICATOR_PATTERNS = Object.freeze([
+  [
+    "privileged_shell_pipeline",
+    /\b(?:curl|wget)\b[^\n|]{0,512}\|\s*(?:sudo\s+)?(?:bash|sh)\b/i,
+  ],
+  [
+    "destructive_recursive_remove",
+    /\brm\s+(?:(?:-[A-Za-z]+)\s+)*-[A-Za-z]*r[A-Za-z]*f[A-Za-z]*\b/i,
+  ],
+]);
+const MAX_ACTION_SAFETY_INDICATORS = 4;
 const RERANK_BOUND_FIELDS = Object.freeze([
   "text",
   "relevance_score",
@@ -1056,6 +1068,13 @@ function validateStageEvidence(
     expectedIdempotencyKey,
     trustedProof,
   );
+  contractString(stage.execution_id, `${stageName}.execution_id`);
+  if (stage.execution_id !== receipt.execution_id) {
+    invalidContract(
+      `${stageName}.execution_id does not match the receipt`,
+      "evidence_mismatch",
+    );
+  }
   if (receipt.result_sha256 !== sha256Digest(stage.result)) {
     invalidContract(
       `${stageName}.receipt.result_sha256 does not match stage.result`,
@@ -1112,6 +1131,289 @@ function validateGuardPolicy(policy, guard, action) {
       "guard_policy_invalid",
     );
   }
+}
+
+function actionSafetyIndicators(value) {
+  if (typeof value !== "string") return [];
+  return ACTION_SAFETY_INDICATOR_PATTERNS
+    .filter(([, pattern]) => pattern.test(value))
+    .map(([indicator]) => indicator)
+    .slice(0, MAX_ACTION_SAFETY_INDICATORS);
+}
+
+function validateGuardSummary(
+  summary,
+  summaryName,
+  { expectedAction, expectedSource, expectedDocumentIndex } = {},
+) {
+  if (!isRecord(summary)) {
+    invalidContract(`${summaryName} must be an object`, "guard_invalid");
+  }
+  if (summary.pin_id !== CANONICAL_GUARD_PIN_ID) {
+    invalidContract(
+      `${summaryName} is not bound to the canonical Guard Pin`,
+      "guard_identity_mismatch",
+    );
+  }
+  if (!DECISION_ACTIONS.has(summary.action)) {
+    invalidContract(`${summaryName}.action is invalid`, "guard_evidence_mismatch");
+  }
+  if (expectedAction !== undefined && summary.action !== expectedAction) {
+    invalidContract(
+      `${summaryName}.action does not match the expected Guard action`,
+      "guard_evidence_mismatch",
+    );
+  }
+  if (summary.source !== expectedSource) {
+    invalidContract(
+      `${summaryName}.source does not identify the guarded input`,
+      "guard_source_mismatch",
+    );
+  }
+  if (expectedSource === "document") {
+    if (
+      !Number.isInteger(summary.document_index) ||
+      summary.document_index !== expectedDocumentIndex
+    ) {
+      invalidContract(
+        `${summaryName}.document_index does not match the document row`,
+        "guard_document_index_invalid",
+      );
+    }
+  } else if (Object.prototype.hasOwnProperty.call(summary, "document_index")) {
+    invalidContract(
+      `${summaryName} must not contain document_index for user_text`,
+      "guard_document_index_invalid",
+    );
+  }
+  contractString(summary.label, `${summaryName}.label`);
+  contractNumber(summary.score, `${summaryName}.score`);
+  if (
+    summary.action === "allow" &&
+    summary.label.trim().toUpperCase() !== "SAFE"
+  ) {
+    invalidContract(
+      `${summaryName} allow requires the canonical Guard SAFE label`,
+      "guard_evidence_mismatch",
+    );
+  }
+  if (summary.policy !== undefined) {
+    validateGuardPolicy(summary.policy, summary, summary.action);
+  }
+  return summary;
+}
+
+function validateGuardStageResult(result, summary, stageName) {
+  const labels = result?.labels;
+  if (!Array.isArray(labels) || labels.length === 0 || !isRecord(labels[0])) {
+    invalidContract(
+      `${stageName}.result must contain Guard labels`,
+      "guard_evidence_mismatch",
+    );
+  }
+  contractString(labels[0].label, `${stageName}.result.labels[0].label`);
+  contractNumber(labels[0].score, `${stageName}.result.labels[0].score`);
+  if (
+    labels[0].label.trim().toUpperCase() !== summary.label.trim().toUpperCase()
+  ) {
+    invalidContract(
+      `${stageName} label and summary label do not match`,
+      "guard_evidence_mismatch",
+    );
+  }
+  if (labels[0].score !== summary.score) {
+    invalidContract(
+      `${stageName} score and summary score do not match`,
+      "guard_evidence_mismatch",
+    );
+  }
+  return labels[0];
+}
+
+function validateGuardDecision(decision, summary, stageName) {
+  if (
+    !isRecord(decision) ||
+    decision.pin_id !== CANONICAL_GUARD_PIN_ID ||
+    !DECISION_ACTIONS.has(decision.action)
+  ) {
+    invalidContract(
+      `${stageName}.decision is not a canonical Guard decision`,
+      "guard_evidence_mismatch",
+    );
+  }
+  contractString(decision.reason_code, `${stageName}.decision.reason_code`);
+  contractNumber(decision.score, `${stageName}.decision.score`);
+  if (decision.action !== summary.action || decision.score !== summary.score) {
+    invalidContract(
+      `${stageName}.decision does not match the Guard summary`,
+      "guard_evidence_mismatch",
+    );
+  }
+  if (
+    isRecord(summary.policy) &&
+    decision.reason_code !== summary.policy.reason_code
+  ) {
+    invalidContract(
+      `${stageName}.decision.reason_code does not match the policy summary`,
+      "guard_evidence_mismatch",
+    );
+  }
+  return decision;
+}
+
+function validateGuardStageSource(
+  stage,
+  stageName,
+  expectedSource,
+  expectedDocumentIndex,
+) {
+  if (!isRecord(stage)) {
+    invalidContract(`${stageName} evidence must be an object`, "evidence_invalid");
+  }
+  if (stage.source !== expectedSource) {
+    invalidContract(
+      `${stageName}.source does not identify the guarded input`,
+      "guard_source_mismatch",
+    );
+  }
+  if (expectedSource === "document") {
+    if (
+      !Number.isInteger(stage.document_index) ||
+      stage.document_index !== expectedDocumentIndex
+    ) {
+      invalidContract(
+        `${stageName}.document_index does not match the document row`,
+        "guard_document_index_invalid",
+      );
+    }
+  } else if (Object.prototype.hasOwnProperty.call(stage, "document_index")) {
+    invalidContract(
+      `${stageName} must not contain document_index for user_text`,
+      "guard_document_index_invalid",
+    );
+  }
+}
+
+function validateDocumentGuards(body, evidence, documents, trustedProof, trustedPolicy) {
+  const summaries = body.document_guards;
+  const stages = evidence.document_guards;
+  if (
+    !Array.isArray(summaries) ||
+    !Array.isArray(stages) ||
+    summaries.length !== documents.length ||
+    stages.length !== documents.length
+  ) {
+    invalidContract(
+      "document_guards must contain exactly one summary and evidence stage per document",
+      "guard_document_index_invalid",
+    );
+  }
+
+  const actions = [];
+  for (let documentIndex = 0; documentIndex < documents.length; documentIndex += 1) {
+    const summary = summaries[documentIndex];
+    const stage = stages[documentIndex];
+    validateGuardSummary(summary, `document_guards[${documentIndex}]`, {
+      expectedSource: "document",
+      expectedDocumentIndex: documentIndex,
+    });
+    validateGuardStageSource(
+      stage,
+      `evidence.document_guards[${documentIndex}]`,
+      "document",
+      documentIndex,
+    );
+    const result = validateStageEvidence(
+      stage,
+      CANONICAL_GUARD_PIN_ID,
+      `evidence.document_guards[${documentIndex}]`,
+      documents[documentIndex],
+      deriveStageIdempotencyKey(CANONICAL_GUARD_PIN_ID, documents[documentIndex]),
+      trustedProof,
+      trustedPolicy,
+    );
+    const decision = stage.decision;
+    if (!DECISION_ACTIONS.has(decision.action)) {
+      invalidContract(
+        `evidence.document_guards[${documentIndex}].decision.action is invalid`,
+        "guard_evidence_mismatch",
+      );
+    }
+    if (decision.action !== summary.action) {
+      invalidContract(
+        `document_guards[${documentIndex}] action does not match signed evidence`,
+        "guard_evidence_mismatch",
+      );
+    }
+    validateGuardStageResult(
+      result,
+      summary,
+      `evidence.document_guards[${documentIndex}]`,
+    );
+    validateGuardDecision(
+      decision,
+      summary,
+      `evidence.document_guards[${documentIndex}]`,
+    );
+    actions.push(summary.action);
+  }
+  return { summaries, stages, actions };
+}
+
+function validateActionSafetySummary(
+  body,
+  userText,
+  guardAction,
+  guardSource,
+) {
+  const expectedIndicators = actionSafetyIndicators(userText);
+  const hasActionSafety = Object.prototype.hasOwnProperty.call(body, "action_safety");
+  const guardCanCarryActionSafety =
+    guardAction === "allow" ||
+    (guardSource === "document" &&
+      (guardAction === "block" || guardAction === "escalate"));
+  if (expectedIndicators.length === 0 || !guardCanCarryActionSafety) {
+    if (hasActionSafety) {
+      invalidContract(
+        "action_safety is not valid for this Guard result",
+        "action_safety_mismatch",
+      );
+    }
+    return false;
+  }
+  // A decisive document block can follow either a user allow (where the
+  // server exposes action_safety) or a user escalation (where it does not).
+  // The block is already fail-closed, so the decisive document contract does
+  // not depend on an otherwise non-authoritative overlay field.
+  if (!hasActionSafety && guardSource === "document" && body.guard.action === "block") {
+    return false;
+  }
+  const summary = body.action_safety;
+  if (!isRecord(summary)) {
+    invalidContract("action_safety must be an object", "action_safety_invalid");
+  }
+  const fields = Object.keys(summary).sort();
+  if (fields.join(",") !== "action,indicators,reason_code") {
+    invalidContract(
+      "action_safety contains unsupported fields",
+      "action_safety_invalid",
+    );
+  }
+  if (
+    summary.action !== "escalate" ||
+    summary.reason_code !== ACTION_SAFETY_REASON_CODE ||
+    !Array.isArray(summary.indicators) ||
+    summary.indicators.length !== expectedIndicators.length ||
+    summary.indicators.some(
+      (indicator, index) => indicator !== expectedIndicators[index],
+    )
+  ) {
+    invalidContract(
+      "action_safety does not match the high-risk user action",
+      "action_safety_mismatch",
+    );
+  }
+  return true;
 }
 
 function validateRerankRows(rows, documents, stageName) {
@@ -1360,92 +1662,247 @@ function validateCoprocessorResponse(body, request, options) {
   if (!isRecord(body.guard)) {
     invalidContract("Bay Run response is missing guard", "guard_invalid");
   }
-  if (body.guard.pin_id !== CANONICAL_GUARD_PIN_ID) {
-    invalidContract("guard is not bound to the canonical Guard Pin", "guard_identity_mismatch");
-  }
-  if (body.guard.action !== action) {
-    invalidContract("guard.action does not match action", "guard_evidence_mismatch");
-  }
-  contractString(body.guard.label, "guard.label");
-  contractNumber(body.guard.score, "guard.score");
-  if (action === "allow" && body.guard.label.trim().toUpperCase() !== "SAFE") {
-    invalidContract("allow requires the canonical Guard SAFE label", "guard_evidence_mismatch");
-  }
-
   if (!isRecord(body.evidence)) {
     invalidContract("Bay Run response is missing evidence", "evidence_invalid");
   }
+
+  const hasDocuments = request.documents !== undefined;
+  const hasDocumentSummaries = Object.prototype.hasOwnProperty.call(
+    body,
+    "document_guards",
+  );
+  const hasDocumentStages = Object.prototype.hasOwnProperty.call(
+    body.evidence,
+    "document_guards",
+  );
+  if (hasDocumentSummaries !== hasDocumentStages) {
+    invalidContract(
+      "document_guards summary and evidence arrays must be present together",
+      "guard_document_index_invalid",
+    );
+  }
+  const hasDocumentContract = hasDocumentSummaries && hasDocumentStages;
+  if (hasDocumentContract && !hasDocuments) {
+    invalidContract(
+      "document_guards cannot be returned without caller documents",
+      "guard_document_index_invalid",
+    );
+  }
+  if (hasDocuments && !hasDocumentContract) {
+    invalidContract(
+      "requests with documents require complete document Guard evidence",
+      "guard_document_index_invalid",
+    );
+  }
+  let documentValidation;
+  if (hasDocuments) {
+    documentValidation = validateDocumentGuards(
+      body,
+      body.evidence,
+      request.documents,
+      options.trustedProof,
+      options.trustedPolicy,
+    );
+  }
+
+  const guardSource = body.guard.source;
+  if (guardSource !== "user_text" && guardSource !== "document") {
+    invalidContract(
+      "guard.source must identify user_text or document",
+      "guard_source_mismatch",
+    );
+  }
+  const guardDocumentIndex = body.guard.document_index;
+  if (guardSource === "document") {
+    if (
+      !hasDocuments ||
+      !Number.isInteger(guardDocumentIndex) ||
+      guardDocumentIndex < 0 ||
+      guardDocumentIndex >= request.documents.length
+    ) {
+      invalidContract(
+        "guard.document_index is outside the caller document set",
+        "guard_document_index_invalid",
+      );
+    }
+    if (!hasDocumentContract) {
+      invalidContract(
+        "a document Guard requires the complete document_guards contract",
+        "guard_document_index_invalid",
+      );
+    }
+  }
+  validateGuardSummary(body.guard, "guard", {
+    expectedSource: guardSource,
+    expectedDocumentIndex: guardDocumentIndex,
+  });
+  if (!isRecord(body.guard.policy)) {
+    invalidContract(
+      "guard.policy is required for the signed Guard decision",
+      "guard_policy_invalid",
+    );
+  }
+  validateGuardPolicy(body.guard.policy, body.guard, body.guard.action);
+
+  const guardInput =
+    guardSource === "document"
+      ? request.documents[guardDocumentIndex]
+      : request.userText;
+  const guardStage = body.evidence.guard;
+  validateGuardStageSource(
+    guardStage,
+    "evidence.guard",
+    guardSource,
+    guardDocumentIndex,
+  );
   const guardResult = validateStageEvidence(
-    body.evidence.guard,
+    guardStage,
     CANONICAL_GUARD_PIN_ID,
     "evidence.guard",
-    request.userText,
-    deriveStageIdempotencyKey(CANONICAL_GUARD_PIN_ID, request.userText),
+    guardInput,
+    deriveStageIdempotencyKey(CANONICAL_GUARD_PIN_ID, guardInput),
     options.trustedProof,
     options.trustedPolicy,
   );
-  const guardDecision = body.evidence.guard.decision;
+  const guardDecision = guardStage.decision;
+  validateGuardDecision(guardDecision, body.guard, "evidence.guard");
+  validateGuardStageResult(guardResult, body.guard, "evidence.guard");
+
+  if (guardSource === "document") {
+    const decisiveStage = documentValidation.stages[guardDocumentIndex];
+    if (
+      guardStage.receipt.receipt_id !== decisiveStage.receipt.receipt_id ||
+      canonicalJsonText(guardDecision) !== canonicalJsonText(decisiveStage.decision) ||
+      canonicalJsonText(guardStage.decision_evidence) !==
+        canonicalJsonText(decisiveStage.decision_evidence)
+    ) {
+      invalidContract(
+        "evidence.guard must preserve the decisive document Guard evidence",
+        "guard_evidence_mismatch",
+      );
+    }
+  }
+
+  const userGuardAction =
+    guardSource === "document" ? "allow" : guardDecision.action;
   if (
-    guardDecision.pin_id !== CANONICAL_GUARD_PIN_ID ||
-    !DECISION_ACTIONS.has(guardDecision.action) ||
-    guardDecision.action !== action ||
-    guardDecision.action !== body.guard.action
+    guardSource === "user_text" &&
+    hasDocumentContract &&
+    ((userGuardAction === "allow" &&
+      documentValidation.actions.some((documentAction) => documentAction !== "allow")) ||
+      (userGuardAction === "escalate" &&
+        documentValidation.actions.some((documentAction) => documentAction === "block")))
   ) {
     invalidContract(
-      "signed Guard decision does not match the top-level action and summary",
-      "guard_evidence_mismatch",
-    );
-  }
-  const labels = guardResult.labels;
-  if (!Array.isArray(labels) || labels.length === 0 || !isRecord(labels[0])) {
-    invalidContract("evidence.guard.result must contain Guard labels", "guard_evidence_mismatch");
-  }
-  contractString(labels[0].label, "evidence.guard.result.labels[0].label");
-  contractNumber(labels[0].score, "evidence.guard.result.labels[0].score");
-  if (labels[0].label.trim().toUpperCase() !== body.guard.label.trim().toUpperCase()) {
-    invalidContract("Guard label and evidence label do not match", "guard_evidence_mismatch");
-  }
-  if (labels[0].score !== body.guard.score) {
-    invalidContract("Guard score and evidence score do not match", "guard_evidence_mismatch");
-  }
-  if (!isRecord(body.guard.policy)) {
-    invalidContract("guard.policy is required for the signed Guard decision", "guard_policy_invalid");
-  }
-  validateGuardPolicy(body.guard.policy, body.guard, action);
-  contractString(guardDecision.reason_code, "evidence.guard.decision.reason_code");
-  contractNumber(guardDecision.score, "evidence.guard.decision.score");
-  if (guardDecision.score !== body.guard.score || guardDecision.score !== labels[0].score) {
-    invalidContract(
-      "signed Guard score does not match the summary and result",
-      "guard_evidence_mismatch",
-    );
-  }
-  if (guardDecision.reason_code !== body.guard.policy.reason_code) {
-    invalidContract(
-      "signed Guard reason does not match the policy summary",
+      "a stronger document Guard must become the decisive Guard stage",
       "guard_evidence_mismatch",
     );
   }
 
-  const hasDocuments = request.documents !== undefined;
-  const expectsRerank = action === "allow" && hasDocuments;
-  if (expectsRerank) {
-    if (body.rerank === null || body.evidence.rerank === null) {
-      invalidContract("allow with documents requires rerank evidence", "rerank_invalid");
+  const actionSafetyOverlay = validateActionSafetySummary(
+    body,
+    request.userText,
+    userGuardAction,
+    guardSource,
+  );
+
+  let orderedDocuments;
+  let rerankDecision;
+  let rerankNoSignal = false;
+  const rerank = body.rerank;
+  const rerankEvidence = body.evidence.rerank;
+  const documentsAllAllow =
+    hasDocumentContract &&
+    documentValidation.actions.every((documentAction) => documentAction === "allow");
+
+  const canRerank =
+    hasDocuments &&
+    userGuardAction === "allow" &&
+    documentsAllAllow &&
+    !actionSafetyOverlay;
+  if (!canRerank) {
+    if (rerank !== null || rerankEvidence !== null) {
+      invalidContract(
+        "rerank is only permitted after every Guard allows without action-safety",
+        "rerank_invalid",
+      );
     }
-  } else if (body.rerank !== null || body.evidence.rerank !== null) {
-    invalidContract("response contains unexpected rerank data", "rerank_invalid");
-  }
-  const orderedDocuments = expectsRerank
-    ? validateRerankSummary(
-      body.rerank,
-      body.evidence.rerank,
+  } else {
+    if (rerank === null || rerankEvidence === null) {
+      invalidContract(
+        "allow with documents requires rerank evidence",
+        "rerank_invalid",
+      );
+    }
+    orderedDocuments = validateRerankSummary(
+      rerank,
+      rerankEvidence,
       request.documents,
       request.userText,
       options.trustedProof,
       options.trustedPolicy,
-    )
-    : undefined;
+    );
+    rerankDecision = rerankEvidence.decision;
+    rerankNoSignal = rerank.signal === "no_signal";
+  }
+
+  let expectedAction;
+  const documentBlockIndex = hasDocuments
+    ? documentValidation.actions.indexOf("block")
+    : -1;
+  const documentEscalateIndex = hasDocuments
+    ? documentValidation.actions.indexOf("escalate")
+    : -1;
+  if (guardSource === "document") {
+    const decisiveIndex =
+      documentBlockIndex >= 0 ? documentBlockIndex : documentEscalateIndex;
+    if (
+      decisiveIndex < 0 ||
+      decisiveIndex !== guardDocumentIndex ||
+      guardDecision.action !== documentValidation.actions[decisiveIndex]
+    ) {
+      invalidContract(
+        "guard.document_index does not identify the first highest-severity document",
+        "guard_document_index_invalid",
+      );
+    }
+    expectedAction = guardDecision.action;
+  } else if (userGuardAction === "block") {
+    expectedAction = "block";
+  } else if (documentBlockIndex >= 0) {
+    invalidContract(
+      "a document block must be the decisive Guard stage",
+      "guard_document_index_invalid",
+    );
+  } else if (userGuardAction === "escalate") {
+    expectedAction = "escalate";
+  } else if (documentEscalateIndex >= 0) {
+    invalidContract(
+      "a document escalation must be the decisive Guard stage",
+      "guard_document_index_invalid",
+    );
+  } else if (actionSafetyOverlay) {
+    expectedAction = "escalate";
+  } else if (rerankNoSignal) {
+    expectedAction = "escalate";
+  } else {
+    expectedAction = "allow";
+  }
+  if (action !== expectedAction) {
+    invalidContract(
+      "top-level action does not match the Guard/document/rerank union",
+      "guard_evidence_mismatch",
+    );
+  }
+  if (
+    rerankNoSignal &&
+    body.reason !== "guard_safe_rerank_no_signal"
+  ) {
+    invalidContract(
+      "rerank abstention must preserve its composite escalation reason",
+      "rerank_evidence_mismatch",
+    );
+  }
 
   if (!isRecord(body.next_call)) {
     invalidContract("Bay Run response is missing next_call", "success_contract_invalid");
@@ -1464,8 +1921,9 @@ function validateCoprocessorResponse(body, request, options) {
   }
 
   return {
+    action,
     decision: guardDecision,
-    rerankDecision: expectsRerank ? body.evidence.rerank.decision : undefined,
+    rerankDecision,
     rerankedDocuments: orderedDocuments,
   };
 }
@@ -1684,6 +2142,7 @@ async function requestCoprocessor(request, options) {
     }
     return {
       body: parsed,
+      action: validated.action,
       decision: validated.decision,
       rerankDecision: validated.rerankDecision,
       rerankedDocuments: validated.rerankedDocuments,
@@ -1900,14 +2359,15 @@ export function withBayRun(generate, options) {
       originalDocuments: request.documents,
       rerankedDocuments: checked.rerankedDocuments,
     });
-    if (checked.decision.action === "block") {
+    if (checked.action === "block") {
       return { status: "blocked", decision: checked.decision, context };
     }
-    if (checked.decision.action !== "allow") {
-      return { status: "review_required", decision: checked.decision, context };
-    }
-    if (checked.rerankDecision?.action === "abstain") {
-      return { status: "review_required", decision: checked.rerankDecision, context };
+    if (checked.action !== "allow") {
+      const reviewDecision =
+        checked.rerankDecision?.action === "abstain"
+          ? checked.rerankDecision
+          : checked.decision;
+      return { status: "review_required", decision: reviewDecision, context };
     }
 
     const preparedInput = await prepareForGeneration(input, context, config);

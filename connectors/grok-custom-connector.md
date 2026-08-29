@@ -28,7 +28,19 @@ and [data policy](https://run.huggingbay.xyz/.well-known/data-policy.json).
 ## Decision handling
 
 For `run_pin` and `solve_task`, inspect `response.decision.action` first. For
-`coprocessor`, inspect the top-level `response.action` first:
+`coprocessor`, inspect the top-level `response.action` first. The coprocessor
+guards `user_text` and every supplied document independently; its
+`document_guards` and `evidence.document_guards` rows must be complete,
+one-to-one, and aligned by `source="document"` plus `document_index`:
+
+- guard every supplied document even when the user Guard or action-safety
+  signal already blocks or escalates;
+- combine document actions with `block > escalate > allow` precedence;
+- use ranked documents only when every Guard action is `allow` and Rerank is
+  `signal="ranked"`;
+- treat top-level `escalate` with a signed Guard `allow` as a composite
+  action-safety or Rerank-abstention escalation, without rewriting the signed
+  Guard evidence.
 
 - `allow`: continue only within the caller's approved task and data policy.
 - `block`: stop generation, tool use, and downstream execution for that input.

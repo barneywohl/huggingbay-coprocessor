@@ -3,24 +3,16 @@
   "public_repository": "https://github.com/barneywohl/huggingbay-coprocessor",
   "package": {
     "name": "@huggingbay/coprocessor",
-    "version": "0.1.5",
+    "version": "0.1.6",
     "repository": "https://github.com/barneywohl/huggingbay-coprocessor",
     "bugs": "https://github.com/barneywohl/huggingbay-coprocessor/issues"
   },
   "status": {
     "repository_created": true,
     "repository_pushed": true,
-    "npm_published": true,
+    "npm_published": false,
     "connector_submitted": false,
     "connector_approved": false
-  },
-  "npm_registry": {
-    "package": "@huggingbay/coprocessor",
-    "version": "0.1.5",
-    "tarball": "https://registry.npmjs.org/@huggingbay/coprocessor/-/coprocessor-0.1.5.tgz",
-    "shasum": "5eadea13548a59745836a6b30de07c69ed08639a",
-    "integrity": "sha512-eRpNxvgptGpk3fX3kRtuWEO6sFRlUt7HPWSJQQtM9evG7JiFZR/+6qkYa/tUFDHBUGERbdAXXvAriumg0si28A==",
-    "verified_at": "2026-08-28T16:53:09Z"
   },
   "files": [
     {
@@ -33,7 +25,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "67d8ed3af54262db911b9e88fc56e48e0639b2017b5e956c5fb3b03cda4aebf8"
+      "sha256": "c7c945239c0a6175b59105c72d634d09e9cbbfe2007cb0ec6181c14ae2c2e459"
     },
     {
       "path": "SECURITY.md",
@@ -41,11 +33,11 @@
     },
     {
       "path": "connectors/README.md",
-      "sha256": "9c9a45debb50aadb00cd677fbf8d70f2d67bfec99771e8952a6ceb168741230d"
+      "sha256": "eb971b346a67084ac1c13729482ad6e32d19fb674bc5727c322c12fd06829cb4"
     },
     {
       "path": "connectors/SUBMISSION.md",
-      "sha256": "f596b437af1cda6b29ee3ee66e7cab7da8b7f605d8112316f3ff91ceb664c70d"
+      "sha256": "3b6b726ec9bd35f6ca6c80ee62b8ddf55626a4a4199b8ff30879e5538a02ac67"
     },
     {
       "path": "connectors/cursor-install.json",
@@ -57,11 +49,11 @@
     },
     {
       "path": "connectors/cursor-mcp.md",
-      "sha256": "9478bbab594a5cf743cfcf3032094ed2d5f3e240ef7ebd6587de8a5c767b3efa"
+      "sha256": "77cbee8a3a4c573501b5fa0c874416ca369b74412af206ea4d0ff629b48d2867"
     },
     {
       "path": "connectors/cursor-plugin/.cursor-plugin/plugin.json",
-      "sha256": "f6d44aa3b022ffef598af88fd19491c7be8ce725f0752c1cbda60199802ea4af"
+      "sha256": "4a3ce980f37d15e35637d6d32f09938c258bcd4e41eca68f241737a6e2f035d2"
     },
     {
       "path": "connectors/cursor-plugin/mcp.json",
@@ -69,15 +61,15 @@
     },
     {
       "path": "connectors/decision-policy.json",
-      "sha256": "ad90aa1b91887f1e32375abab52b279ef4e96f88c3ebb8b2d2faecf5e86569a1"
+      "sha256": "1750382cf7e123516267b7c05c409ad56a7ee52750c458944f3af42400198062"
     },
     {
       "path": "connectors/grok-custom-connector.json",
-      "sha256": "673a4231598da7db2a1139f0f81c585c7f81a63834ee807bb8f3110d5ea79ef5"
+      "sha256": "258fa8fceb1d1c0b1b2da77607c9aa7db0c887a71c82d7b3fb9a2aaf56069bb8"
     },
     {
       "path": "connectors/grok-custom-connector.md",
-      "sha256": "d22474e37288f7b1cbb1d18c8729e8337a80105f53b0f3e0d6ca7aeb375dc255"
+      "sha256": "783f1d551046a8030792765ee143d75c1f0778e1744b9156b86583004220b52d"
     },
     {
       "path": "examples/anthropic-style.mjs",
@@ -93,19 +85,19 @@
     },
     {
       "path": "package.json",
-      "sha256": "b55b65ca8101b301fbd8f5f6d31e45d22665c6c2273dd8751b47fc06e6237872"
+      "sha256": "d7c307f35b02146cbfb6d1f9fc819261140f725d3daa88e008c24583b16253f9"
     },
     {
       "path": "src/index.d.ts",
-      "sha256": "aaea7e58fdf3cc70b86b7b054a7ecb5739bd7a6a8f0d69d3e23fd4d8374d472d"
+      "sha256": "4fa12667eaec1af465ecf3a5369421395805a3ea526e6c0be6261881b4e6e223"
     },
     {
       "path": "src/index.js",
-      "sha256": "c0756d22cab8eaf4641058d2dad6f8ebf78d6149ef6a00b52248142701fa99b1"
+      "sha256": "7fd2f4c33332fc70c9b15f4ad93148be31255779dfdd1077393467eb3eec6277"
     },
     {
       "path": "verification/validate-connectors.mjs",
-      "sha256": "372a59cfdc0145e57004f4125877d4e0668e5166a434700e97a3cf1244054854"
+      "sha256": "ed679db319661a2cf60e97f89e65d7ac78e8b7464ccc1b71d1e8e8338da2c93d"
     },
     {
       "path": "verification/verified-usage.mjs",

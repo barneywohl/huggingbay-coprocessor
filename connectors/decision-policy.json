@@ -10,6 +10,13 @@
     "omit_raw_result": true,
     "raw_result_opt_in": "Set omit_raw_result=false only when receipt-bound raw evidence is explicitly required."
   },
+  "coprocessor_contract": {
+    "guard_inputs": "Guard user_text and every supplied documents item independently, even when the user Guard or action-safety signal already blocks or escalates.",
+    "document_mapping": "Require one document_guards summary and one evidence.document_guards stage per input, with source=document and the exact document_index.",
+    "document_precedence": ["block", "escalate", "allow"],
+    "rerank_gate": "Expose ranked documents only when every Guard action is allow and Rerank signal is ranked.",
+    "composite_escalation": "Top-level escalate may preserve a signed Guard allow for high-risk action safety or Rerank abstention."
+  },
   "allowed_tools": [
     "run_pin",
     "solve_task",

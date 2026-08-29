@@ -46,8 +46,17 @@ and [data policy](https://run.huggingbay.xyz/.well-known/data-policy.json).
 Start with `coprocessor` for the bounded Guard-first composition. For
 `run_pin` and `solve_task`, read `response.decision.action` before using
 `response.result`; for `coprocessor`, read the top-level `response.action`.
+The coprocessor independently guards `user_text` and every supplied document.
+Require complete, one-to-one `document_guards` and `evidence.document_guards`
+rows with `source="document"` and the exact `document_index`; combine their
+actions with `block > escalate > allow` precedence. Every supplied document
+still receives a Guard row when the user Guard or action-safety signal already
+blocks or escalates. Use ranked documents only
+when every Guard action is `allow` and Rerank returns `signal="ranked"`.
 Stop on `block`, pause on `escalate`, and continue only on `allow` within the
-caller's approved policy. The default is decision-only
+caller's approved policy. A top-level `escalate` may preserve a signed Guard
+`allow` for high-risk action safety or Rerank abstention; do not rewrite that
+signed Guard evidence. The default is decision-only
 (`omit_raw_result=true`); raw evidence is an explicit opt-in.
 
 Example `coprocessor` call:

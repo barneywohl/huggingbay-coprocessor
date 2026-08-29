@@ -12,11 +12,18 @@ tool set bounded to:
 run_pin, solve_task, coprocessor
 ```
 
-Start with `coprocessor` for one Guard-first composition. Use `run_pin` for a
-known canonical Pin and `solve_task` only when no canonical Pin fits. Follow
-the returned action before reading or acting on raw result data. The service's
-decision-only default is `omit_raw_result=true`; opt into raw evidence only
-when it is explicitly required and receipt-bound.
+Start with `coprocessor` for one Guard-first composition. It independently
+guards `user_text` and every supplied document; require complete, one-to-one
+`document_guards` and `evidence.document_guards` rows with exact source/index
+mapping even when the user Guard or action-safety signal already blocks or
+escalates. Combine document actions with `block > escalate > allow`, and use
+ranked documents only when every Guard allows and Rerank returns a ranked
+signal. A top-level `escalate` can preserve a signed Guard `allow` for high-risk
+action safety or Rerank abstention. Use `run_pin` for a known canonical Pin and
+`solve_task` only when no canonical Pin fits. Follow the returned action before
+reading or acting on raw result data. The service's decision-only default is
+`omit_raw_result=true`; opt into raw evidence only when it is explicitly
+required and receipt-bound.
 
 This connector pack is fail-closed. If the MCP service is unavailable,
 authentication fails, the response is malformed, or the required action is
