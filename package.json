@@ -47,7 +47,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/barneywohl/huggingbay-coprocessor"
+    "url": "git+https://github.com/barneywohl/huggingbay-coprocessor.git"
   },
   "bugs": {
     "url": "https://github.com/barneywohl/huggingbay-coprocessor/issues"
