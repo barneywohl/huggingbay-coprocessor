@@ -26,7 +26,7 @@ plugin manifest and the same URL-only MCP definition.
 Keep the available tools bounded to:
 
 ```text
-run_pin, solve_task, coprocessor
+coprocessor, run_pin, solve_task
 ```
 
 Complete authentication through Cursor's supported OAuth or secret flow. The
@@ -74,4 +74,7 @@ Example `coprocessor` call:
 
 The connector never generates text or executes tools. Re-check the live
 contract before relying on route IDs or limits. See [submission guidance](SUBMISSION.md)
-for the separate human review steps.
+for the separate human re-index and review steps. The checked-in receipt records
+a Cursor publish-form acknowledgement; the public repository changed after that
+acknowledgement, so a human publisher must request a provider re-index if
+required. No approval or marketplace listing is claimed.

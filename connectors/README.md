@@ -1,15 +1,16 @@
 # Bay Run connector examples
 
 This directory contains bounded Grok and Cursor connector assets for Bay Run's
-public Streamable HTTP MCP surface. The Cursor Marketplace application was
-submitted on 2026-08-28 and is pending provider review. The assets do not deploy
-a service, create credentials, or claim provider approval.
+public Streamable HTTP MCP surface. The checked-in Cursor receipt records that
+the Marketplace publish form displayed a submission acknowledgement on
+2026-08-28; provider review, approval, and listing remain unclaimed. The assets
+do not deploy a service or create credentials.
 
 The canonical MCP URL is `https://run.huggingbay.xyz/mcp/`. Keep the focused
 tool set bounded to:
 
 ```text
-run_pin, solve_task, coprocessor
+coprocessor, run_pin, solve_task
 ```
 
 Start with `coprocessor` for one Guard-first composition. It independently
@@ -44,6 +45,11 @@ Files in this directory:
   provider review remains pending.
 - `decision-policy.json`: the shared action-handling guidance.
 - `SUBMISSION.md`: provider submission readiness and the remaining human steps.
+
+The public repository changed after the recorded acknowledgement. Under
+Cursor's current publisher terms, the human publisher must request a provider
+re-index for the changed package if required; no re-index, approval, or
+marketplace listing is recorded here.
 
 Before sending data, read Bay Run's [privacy policy](https://run.huggingbay.xyz/privacy)
 and [data policy](https://run.huggingbay.xyz/.well-known/data-policy.json), and

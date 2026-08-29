@@ -8,9 +8,9 @@
   "config_base64": "eyJ1cmwiOiJodHRwczovL3J1bi5odWdnaW5nYmF5Lnh5ei9tY3AvIn0=",
   "deeplink": "cursor://anysphere.cursor-deeplink/mcp/install?name=bay-run&config=eyJ1cmwiOiJodHRwczovL3J1bi5odWdnaW5nYmF5Lnh5ei9tY3AvIn0=",
   "expected_tools": [
+    "coprocessor",
     "run_pin",
-    "solve_task",
-    "coprocessor"
+    "solve_task"
   ],
   "verification": {
     "live_server_card": "https://run.huggingbay.xyz/.well-known/mcp/server-card.json",

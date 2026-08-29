@@ -11,7 +11,7 @@ this JSON is a bounded reference asset, not an xAI catalog-import format. Keep
 only these tools enabled when the client offers a per-tool selector:
 
 ```json
-["run_pin", "solve_task", "coprocessor"]
+["coprocessor", "run_pin", "solve_task"]
 ```
 
 The `$BAY_RUN_TOKEN` value in the JSON is an environment placeholder, not a

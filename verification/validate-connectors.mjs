@@ -4,7 +4,7 @@ import { dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const expectedTools = ["run_pin", "solve_task", "coprocessor"];
+const expectedTools = ["coprocessor", "run_pin", "solve_task"];
 const canonicalMcpUrl = "https://run.huggingbay.xyz/mcp/";
 const privacyUrl = "https://run.huggingbay.xyz/privacy";
 const dataPolicyUrl = "https://run.huggingbay.xyz/.well-known/data-policy.json";

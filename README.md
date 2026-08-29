@@ -17,11 +17,12 @@ For a local checkout, run `npm install .` from the repository root.
 
 This public repository also contains source-only Grok and Cursor connector
 assets. The root `.cursor-plugin/plugin.json` and `mcp.json` make this repository
-directly scannable as a Cursor plugin; inclusion in Cursor Marketplace still
-requires Cursor review and is not claimed here. These assets do not create
-credentials or claim provider approval. The checked-in provider allowlist is exactly
-`["run_pin", "solve_task", "coprocessor"]`; the Cursor MCP configuration is
-URL-only at `https://run.huggingbay.xyz/mcp/`.
+directly scannable as a Cursor plugin. The checked-in receipt records that the
+Cursor Marketplace publish form displayed a submission acknowledgement on
+2026-08-28; provider review, approval, and listing are not claimed here. These
+assets do not create credentials or claim provider approval. The checked-in
+provider allowlist is exactly `["coprocessor", "run_pin", "solve_task"]`; the
+Cursor MCP configuration is URL-only at `https://run.huggingbay.xyz/mcp/`.
 
 See the [connector overview](connectors/README.md), [Grok setup](connectors/grok-custom-connector.md),
 [Cursor setup](connectors/cursor-mcp.md), and [submission guidance](connectors/SUBMISSION.md).

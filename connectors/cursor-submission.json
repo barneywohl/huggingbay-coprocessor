@@ -2,9 +2,12 @@
   "schema": "huggingbay.connector-submission.v1",
   "provider": "cursor",
   "repository": "https://github.com/barneywohl/huggingbay-coprocessor",
+  "submission_url": "https://cursor.com/marketplace/publish",
   "submitted_at": "2026-08-28T17:08:53Z",
   "submission_acknowledged": true,
   "provider_review": "pending",
   "provider_approval_claimed": false,
+  "listing_claimed": false,
+  "evidence_url": "https://github.com/barneywohl/huggingbay-coprocessor/blob/main/connectors/cursor-submission.json",
   "evidence": "Cursor Marketplace displayed its Thanks for applying acknowledgement after form submission."
 }

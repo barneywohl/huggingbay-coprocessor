@@ -10,7 +10,7 @@
     {
       "name": "bay-run",
       "source": "connectors/cursor-plugin",
-      "description": "Connect Cursor to Bay Run's URL-only Streamable HTTP MCP server with exactly three bounded tools: run_pin, solve_task, and coprocessor.",
+      "description": "Connect Cursor to Bay Run's URL-only Streamable HTTP MCP server with exactly three bounded tools: coprocessor, run_pin, and solve_task.",
       "homepage": "https://github.com/barneywohl/huggingbay-coprocessor",
       "repository": "https://github.com/barneywohl/huggingbay-coprocessor",
       "license": "MIT",

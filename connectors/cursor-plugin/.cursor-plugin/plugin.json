@@ -1,7 +1,7 @@
 {
   "name": "bay-run",
   "version": "1.0.0",
-  "description": "Connect Cursor to Bay Run's URL-only Streamable HTTP MCP server with exactly three bounded tools: run_pin, solve_task, and coprocessor. The coprocessor independently guards user_text and every document even when another Guard or action-safety signal already blocks or escalates, combines block > escalate > allow, reranks only after all Guards allow, defaults to decision-only responses (omit_raw_result=true), and fails closed on unavailable or malformed decisions; it never generates text or executes tools, and receipts do not prove answer correctness.",
+  "description": "Connect Cursor to Bay Run's URL-only Streamable HTTP MCP server with exactly three bounded tools: coprocessor, run_pin, and solve_task. The coprocessor independently guards user_text and every document even when another Guard or action-safety signal already blocks or escalates, combines block > escalate > allow, reranks only after all Guards allow, defaults to decision-only responses (omit_raw_result=true), and fails closed on unavailable or malformed decisions; it never generates text or executes tools, and receipts do not prove answer correctness.",
   "author": {
     "name": "Bay Run"
   },

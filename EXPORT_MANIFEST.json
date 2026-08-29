@@ -11,13 +11,13 @@
     "repository_created": true,
     "repository_pushed": true,
     "npm_published": false,
-    "connector_submitted": false,
+    "connector_submitted": true,
     "connector_approved": false
   },
   "files": [
     {
       "path": ".cursor-plugin/marketplace.json",
-      "sha256": "dfac1367441a5486b759fd716835e80282ddc900d54f77f09993830d77c45208"
+      "sha256": "a07dabc079187077148d71492ccade134c1e8d8c047f4c11943abe1c069aa5d2"
     },
     {
       "path": "LICENSE",
@@ -25,7 +25,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "c7c945239c0a6175b59105c72d634d09e9cbbfe2007cb0ec6181c14ae2c2e459"
+      "sha256": "5106a7c26c7c60c17399757c5f119225725ece42cd25f0de28094d89101be286"
     },
     {
       "path": "SECURITY.md",
@@ -33,15 +33,15 @@
     },
     {
       "path": "connectors/README.md",
-      "sha256": "eb971b346a67084ac1c13729482ad6e32d19fb674bc5727c322c12fd06829cb4"
+      "sha256": "5cac4e3202102cb5a36f35452c250c1d63e81756f6fb8496c8f3634e47893005"
     },
     {
       "path": "connectors/SUBMISSION.md",
-      "sha256": "3b6b726ec9bd35f6ca6c80ee62b8ddf55626a4a4199b8ff30879e5538a02ac67"
+      "sha256": "916200f1065d1cfd0b570e5c41c58ad8eca4dee774d0c64236a54d67cf8e457c"
     },
     {
       "path": "connectors/cursor-install.json",
-      "sha256": "20970a48e916c7f43f8929276b3240bc7e8fe843d802f9648af31e65356c29fc"
+      "sha256": "886da0828939b773f3dbec190427c1f063136e2a927e0e117adcefa0056d5b63"
     },
     {
       "path": "connectors/cursor-mcp.json",
@@ -49,11 +49,11 @@
     },
     {
       "path": "connectors/cursor-mcp.md",
-      "sha256": "77cbee8a3a4c573501b5fa0c874416ca369b74412af206ea4d0ff629b48d2867"
+      "sha256": "e10b2cc282252f254996fa1c230bf107c382d40f5d9f3fb86b1debe65584f23b"
     },
     {
       "path": "connectors/cursor-plugin/.cursor-plugin/plugin.json",
-      "sha256": "4a3ce980f37d15e35637d6d32f09938c258bcd4e41eca68f241737a6e2f035d2"
+      "sha256": "50eb52ac2d498c905735a6c593b8cb701e1cbdbc63f0b58e6c1eab9f7049f56a"
     },
     {
       "path": "connectors/cursor-plugin/mcp.json",
@@ -61,15 +61,15 @@
     },
     {
       "path": "connectors/decision-policy.json",
-      "sha256": "1750382cf7e123516267b7c05c409ad56a7ee52750c458944f3af42400198062"
+      "sha256": "759566eef7bebefb44bbc43af88f8013be4955e117c8cc0e168bda5dcc054233"
     },
     {
       "path": "connectors/grok-custom-connector.json",
-      "sha256": "258fa8fceb1d1c0b1b2da77607c9aa7db0c887a71c82d7b3fb9a2aaf56069bb8"
+      "sha256": "4bf3e2295d74925a92196f12294d81c0c4d65c266a9df27716d6adb14f87b059"
     },
     {
       "path": "connectors/grok-custom-connector.md",
-      "sha256": "783f1d551046a8030792765ee143d75c1f0778e1744b9156b86583004220b52d"
+      "sha256": "5a52ebcb6c85d7e8b9adf37f2c999d1dbcebdb68f5d3b52a9e750ff6dc843693"
     },
     {
       "path": "examples/anthropic-style.mjs",
@@ -85,7 +85,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "d7c307f35b02146cbfb6d1f9fc819261140f725d3daa88e008c24583b16253f9"
+      "sha256": "3adb9ea8d867038d50c930b6fe8dd4f30c1d3424c875bd83c3b7c087179ce162"
     },
     {
       "path": "src/index.d.ts",
@@ -97,7 +97,7 @@
     },
     {
       "path": "verification/validate-connectors.mjs",
-      "sha256": "ed679db319661a2cf60e97f89e65d7ac78e8b7464ccc1b71d1e8e8338da2c93d"
+      "sha256": "ce487302bb6a72d8b0f0f3c21ea74829cf3788415f938bb57fcf2a1ac7115eba"
     },
     {
       "path": "verification/verified-usage.mjs",

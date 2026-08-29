@@ -1,9 +1,10 @@
 # Connector submission guidance
 
-The Cursor Marketplace application for this public repository was submitted on
-2026-08-28 and acknowledged by Cursor. Provider review remains pending and no
-approval is claimed. The Grok material remains a Custom MCP setup guide rather
-than a public catalog submission.
+The checked-in receipt records that Cursor's Marketplace publish form displayed
+a submission acknowledgement for this public repository on 2026-08-28.
+Provider review remains pending; approval and marketplace listing are not
+claimed. The Grok material remains a Custom MCP setup guide rather than a
+public catalog submission.
 
 ## Grok
 
@@ -11,8 +12,8 @@ than a public catalog submission.
 2. In [Grok Connectors](https://grok.com/connectors), add a Custom MCP connector.
 3. Use `https://run.huggingbay.xyz/mcp/` and complete the provider's supported
    authentication flow.
-4. Confirm that the focused tool set is exactly `run_pin`, `solve_task`, and
-   `coprocessor`, and exercise a safe, non-sensitive request.
+4. Confirm that the focused tool set is exactly `coprocessor`, `run_pin`, and
+   `solve_task`, and exercise a safe, non-sensitive request.
 
 xAI's documented Custom MCP flow does not define a public third-party catalog
 submission process. The operator's Custom MCP connection was verified connected
@@ -26,9 +27,14 @@ on 2026-08-28 with exactly the three expected tools; see
 2. Test the `cursor-plugin/` package locally in Cursor and confirm the
    URL-only MCP definition and bounded tool set.
 3. The public repository link was submitted through [Cursor Marketplace publishing](https://cursor.com/marketplace/publish)
-   on 2026-08-28; see `cursor-submission.json` for the bounded receipt.
-4. Treat Cursor review and approval as separate provider evidence. The current
-   state is submitted and pending review, not approved or listed.
+   on 2026-08-28; the publish-form acknowledgement is recorded in
+   `cursor-submission.json`.
+4. The public repository changed after that acknowledgement. Under the current
+   [Cursor Publisher Terms](https://cursor.com/marketplace-publisher-terms), a
+   human publisher must request a provider re-index for the changed package if
+   required; no re-index request is recorded here.
+5. Treat Cursor review, approval, and marketplace listing as separate provider
+   evidence. None is claimed by this repository.
 
 ## Privacy and failure handling
 

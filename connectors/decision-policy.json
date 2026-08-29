@@ -18,9 +18,9 @@
     "composite_escalation": "Top-level escalate may preserve a signed Guard allow for high-risk action safety or Rerank abstention."
   },
   "allowed_tools": [
+    "coprocessor",
     "run_pin",
-    "solve_task",
-    "coprocessor"
+    "solve_task"
   ],
   "failure_mode": {
     "mode": "fail-closed",
