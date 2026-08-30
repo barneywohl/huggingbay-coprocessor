@@ -26,9 +26,9 @@ const DECISION_EVIDENCE_PROOF_SCHEMA = "bay-run.pin-decision-evidence-proof.v1";
 const POLICY_ID = "bay-run.canonical-pin-decision-policy.v1";
 const POLICY_DIGEST = `sha256:${"b".repeat(64)}`;
 const LIVE_POLICY_DIGEST =
-  "sha256:e38b084aabfdeb0f0ef136c719c437d378d95a80f5b1c86f155d2541afc69b06";
-const NEXT_POLICY_DIGEST =
   "sha256:f9dbed6fb9bd4f2f2cbcd14703082965801b8a090fb9b558db76ad16a45a3cd1";
+const NEXT_POLICY_DIGEST =
+  "sha256:8e96163e816880f1e62e8307964b3268c97ba496a5a96bf492e0d97d3b12be82";
 const THIRD_POLICY_DIGEST = `sha256:${"c".repeat(64)}`;
 const BENIGN_TRACKING_REASON_CODE = "guard_benign_shipping_tracking";
 const BENIGN_OWNER_INTENT_REASON_CODE = "guard_benign_owner_intent";
@@ -1011,46 +1011,54 @@ test("document block remains decisive when user escalation omits action-safety",
 });
 
 test("bounded owner summary allows guarded documents when rerank abstains", async () => {
-  const userText = "Summarize. Do not run or click.";
   const documents = ["def add(a, b): return a + b"];
-  for (const policyDigest of [LIVE_POLICY_DIGEST, NEXT_POLICY_DIGEST]) {
-    const response = coprocessorResponse({
-      userText,
-      documents,
-      rerankSignal: "no_signal",
-      boundedOwnerSummaryIntent: true,
-      guardReasonCode: BENIGN_OWNER_INTENT_REASON_CODE,
-      guardPolicyOverrides: {
-        benign_owner_intent_indicators: [BOUNDED_OWNER_SUMMARY_INDICATOR],
-      },
-      policyDigest,
-    });
-    let generationCalls = 0;
-    const outcome = await guardedFor(response, () => {
-      generationCalls += 1;
-      return "generated";
-    }, PRODUCTION_POLICY_TRUST)({ input: userText, documents });
+  for (const userText of [
+    "Summarize. Do not run or click.",
+    "Summarize. Don't run or click.",
+    "Summarize. Don’t run or click.",
+  ]) {
+    for (const policyDigest of [LIVE_POLICY_DIGEST, NEXT_POLICY_DIGEST]) {
+      const response = coprocessorResponse({
+        userText,
+        documents,
+        rerankSignal: "no_signal",
+        boundedOwnerSummaryIntent: true,
+        guardReasonCode: BENIGN_OWNER_INTENT_REASON_CODE,
+        guardPolicyOverrides: {
+          benign_owner_intent_indicators: [BOUNDED_OWNER_SUMMARY_INDICATOR],
+        },
+        policyDigest,
+      });
+      let generationCalls = 0;
+      const outcome = await guardedFor(response, () => {
+        generationCalls += 1;
+        return "generated";
+      }, PRODUCTION_POLICY_TRUST)({ input: userText, documents });
 
-    assert.equal(outcome.status, "generated");
-    assert.equal(outcome.output, "generated");
-    assert.equal(generationCalls, 1);
-    assert.equal(outcome.context.bayRunResponse.action, "allow");
-    assert.equal(
-      outcome.context.bayRunResponse.reason,
-      GUARDED_DOCUMENT_SUMMARY_REASON_CODE,
-    );
-    assert.equal(outcome.context.bayRunResponse.guard.source, "user_text");
-    assert.deepEqual(
-      outcome.context.bayRunResponse.guard.policy.benign_owner_intent_indicators,
-      [BOUNDED_OWNER_SUMMARY_INDICATOR],
-    );
-    assert.deepEqual(
-      outcome.context.bayRunResponse.document_guards.map((row) => row.action),
-      ["allow"],
-    );
-    assert.equal(outcome.context.bayRunResponse.rerank.signal, "no_signal");
-    assert.equal(outcome.context.bayRunResponse.rerank.abstention.abstained, true);
-    assert.equal(outcome.context.rerankedDocuments, undefined);
+      assert.equal(outcome.status, "generated");
+      assert.equal(outcome.output, "generated");
+      assert.equal(generationCalls, 1);
+      assert.equal(outcome.context.bayRunResponse.action, "allow");
+      assert.equal(
+        outcome.context.bayRunResponse.reason,
+        GUARDED_DOCUMENT_SUMMARY_REASON_CODE,
+      );
+      assert.equal(outcome.context.bayRunResponse.guard.source, "user_text");
+      assert.deepEqual(
+        outcome.context.bayRunResponse.guard.policy.benign_owner_intent_indicators,
+        [BOUNDED_OWNER_SUMMARY_INDICATOR],
+      );
+      assert.deepEqual(
+        outcome.context.bayRunResponse.document_guards.map((row) => row.action),
+        ["allow"],
+      );
+      assert.equal(outcome.context.bayRunResponse.rerank.signal, "no_signal");
+      assert.equal(
+        outcome.context.bayRunResponse.rerank.abstention.abstained,
+        true,
+      );
+      assert.equal(outcome.context.rerankedDocuments, undefined);
+    }
   }
 });
 

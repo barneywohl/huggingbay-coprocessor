@@ -2,9 +2,9 @@ import { createHash, createPublicKey, verify as verifySignature } from "node:cry
 import { isIP } from "node:net";
 
 const CURRENT_POLICY_DIGEST =
-  "sha256:e38b084aabfdeb0f0ef136c719c437d378d95a80f5b1c86f155d2541afc69b06";
-const REVIEWED_NEXT_POLICY_DIGEST =
   "sha256:f9dbed6fb9bd4f2f2cbcd14703082965801b8a090fb9b558db76ad16a45a3cd1";
+const REVIEWED_NEXT_POLICY_DIGEST =
+  "sha256:8e96163e816880f1e62e8307964b3268c97ba496a5a96bf492e0d97d3b12be82";
 const PRODUCTION_POLICY_DIGESTS = Object.freeze([
   CURRENT_POLICY_DIGEST,
   REVIEWED_NEXT_POLICY_DIGEST,
@@ -25,7 +25,7 @@ export const BAY_RUN_PRODUCTION_TRUST_V1 = Object.freeze({
 
 const DEFAULT_BASE_URL = "https://run.huggingbay.xyz";
 const DEFAULT_TIMEOUT_MS = 10_000;
-const SDK_HEADER = "@huggingbay/coprocessor/0.1.9";
+const SDK_HEADER = "@huggingbay/coprocessor/0.1.10";
 const COPROCESSOR_SCHEMA = "bay-run.coprocessor.v1";
 const GUARD_POLICY_SCHEMA = "bay-run.guard-policy.v1";
 const PIN_PROOF_SCHEMA = "bay-run.pin-proof.v1";
@@ -42,7 +42,7 @@ const BENIGN_OWNER_INTENT_INDICATORS_FIELD = "benign_owner_intent_indicators";
 const BOUNDED_OWNER_SUMMARY_INDICATOR = "whole_request_summary_no_click";
 const GUARDED_DOCUMENT_SUMMARY_REASON_CODE = "guarded_document_summary";
 const BOUNDED_OWNER_SUMMARY_PATTERN =
-  /^[ \t]*summarize[.!?][ \t]+do[ \t]+not[ \t]+(?:run[ \t]+or[ \t]+)?click[.!?]?[ \t]*$/i;
+  /^[ \t]*summarize[.!?][ \t]+(?:do[ \t]+not|don['’]t)[ \t]+(?:run[ \t]+or[ \t]+)?click[.!?]?[ \t]*$/i;
 const ACTION_SAFETY_INDICATOR_PATTERNS = Object.freeze([
   [
     "privileged_shell_pipeline",
