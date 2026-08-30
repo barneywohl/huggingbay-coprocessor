@@ -13,13 +13,42 @@ npm install @huggingbay/coprocessor
 
 For a local checkout, run `npm install .` from the repository root.
 
-## Install the Bay Run skill
+## Install the [Bay Run skill](skills/bay-run/SKILL.md)
 
-- Codex: install the `bay-run` skill at `~/.codex/skills/bay-run`.
-- Claude: install it at `~/.claude/skills/bay-run`.
-- Omarchy: symlink the shared skill into `~/.codex/skills`, `~/.claude/skills`, `~/.pi/agent/skills`, `~/.gemini/config/skills`, and `~/.agents/skills`.
-- Grok CLI: run `grok mcp add --transport http bay-run https://run.huggingbay.xyz/mcp/` with a resource-bound `mcp:demo` token for that MCP resource in `BAY_RUN_TOKEN`.
-- The skill works without Omarchy.
+The canonical source is [`skills/bay-run/`](skills/bay-run/). From this public
+checkout, copy it into Codex, Claude, or Grok without Omarchy:
+
+```sh
+for TARGET in \
+  "$HOME/.codex/skills/bay-run" \
+  "$HOME/.claude/skills/bay-run" \
+  "$HOME/.grok/skills/bay-run"; do
+  mkdir -p "$TARGET"
+  cp skills/bay-run/SKILL.md "$TARGET/SKILL.md"
+done
+```
+
+For Omarchy, symlink the canonical directory to all five shared targets:
+`~/.codex/skills/bay-run`, `~/.claude/skills/bay-run`,
+`~/.pi/agent/skills/bay-run`, `~/.gemini/config/skills/bay-run`, and
+`~/.agents/skills/bay-run`:
+
+```sh
+SOURCE_DIR="$(pwd)/skills/bay-run"
+for TARGET in \
+  "$HOME/.codex/skills/bay-run" \
+  "$HOME/.claude/skills/bay-run" \
+  "$HOME/.pi/agent/skills/bay-run" \
+  "$HOME/.gemini/config/skills/bay-run" \
+  "$HOME/.agents/skills/bay-run"; do
+  mkdir -p "$(dirname "$TARGET")"
+  ln -sfn "$SOURCE_DIR" "$TARGET"
+done
+```
+
+Grok CLI: run `grok mcp add --transport http bay-run https://run.huggingbay.xyz/mcp/`;
+use a resource-bound `mcp:demo` token in `BAY_RUN_TOKEN` for that MCP resource.
+The skill works without Omarchy.
 
 ## Grok and Cursor connector assets
 

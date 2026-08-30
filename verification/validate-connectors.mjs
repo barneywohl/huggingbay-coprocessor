@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, relative, resolve, sep } from "node:path";
@@ -153,18 +154,19 @@ check(
 
 const readme = readText("README.md");
 const security = readText("SECURITY.md");
-const skillInstallSection = readme.match(
-  /## Install the Bay Run skill\n\n((?:- .+\n){5})/,
+const bayRunSkill = readText("skills/bay-run/SKILL.md");
+const reviewedBayRunSkillSha256 = "f41d21ba9fef59e536fdd826e73f6556a3d2a5ae351730e44db562b9038b184b";
+check(
+  createHash("sha256").update(bayRunSkill, "utf8").digest("hex") === reviewedBayRunSkillSha256,
+  "public Bay Run skill does not match the reviewed source",
 );
-check(skillInstallSection, "README Bay Run skill install section must contain exactly five lines");
+const skillInstallSection = readme.match(
+  /## Install the \[Bay Run skill\]\(skills\/bay-run\/SKILL\.md\)\n\n([\s\S]*?)\n## Grok and Cursor connector assets/,
+);
+check(skillInstallSection, "README must link directly to the public Bay Run skill");
 for (const expected of [
-  "~/.codex/skills/bay-run",
-  "~/.claude/skills/bay-run",
-  "~/.codex/skills",
-  "~/.claude/skills",
-  "~/.pi/agent/skills",
-  "~/.gemini/config/skills",
-  "~/.agents/skills",
+  "[`skills/bay-run/`](skills/bay-run/)",
+  "cp skills/bay-run/SKILL.md \"$TARGET/SKILL.md\"",
   "grok mcp add --transport http bay-run https://run.huggingbay.xyz/mcp/",
   "mcp:demo",
   "BAY_RUN_TOKEN",
@@ -172,6 +174,17 @@ for (const expected of [
 ]) {
   check(skillInstallSection[1].includes(expected), `README skill install section omits ${expected}`);
 }
+for (const expected of [
+  "~/.codex/skills/bay-run",
+  "~/.claude/skills/bay-run",
+  "~/.pi/agent/skills/bay-run",
+  "~/.gemini/config/skills/bay-run",
+  "~/.agents/skills/bay-run",
+]) {
+  check(bayRunSkill.includes(expected), `public Bay Run skill omits ${expected}`);
+  check(skillInstallSection[1].includes(expected), `README skill install section omits ${expected}`);
+}
+check(bayRunSkill.includes("not exclusive REST/MCP audiences"), "public Bay Run skill token-boundary wording drifted");
 const connectorDocs = [
   ["connectors/README.md", readText("connectors/README.md")],
   ["connectors/SUBMISSION.md", readText("connectors/SUBMISSION.md")],
