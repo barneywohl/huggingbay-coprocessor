@@ -10,7 +10,7 @@
   "status": {
     "repository_created": true,
     "repository_pushed": true,
-    "npm_published": false,
+    "npm_published": true,
     "connector_submitted": true,
     "connector_approved": false
   },
