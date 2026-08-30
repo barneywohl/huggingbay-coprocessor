@@ -153,6 +153,25 @@ check(
 
 const readme = readText("README.md");
 const security = readText("SECURITY.md");
+const skillInstallSection = readme.match(
+  /## Install the Bay Run skill\n\n((?:- .+\n){5})/,
+);
+check(skillInstallSection, "README Bay Run skill install section must contain exactly five lines");
+for (const expected of [
+  "~/.codex/skills/bay-run",
+  "~/.claude/skills/bay-run",
+  "~/.codex/skills",
+  "~/.claude/skills",
+  "~/.pi/agent/skills",
+  "~/.gemini/config/skills",
+  "~/.agents/skills",
+  "grok mcp add --transport http bay-run https://run.huggingbay.xyz/mcp/",
+  "mcp:demo",
+  "BAY_RUN_TOKEN",
+  "without Omarchy",
+]) {
+  check(skillInstallSection[1].includes(expected), `README skill install section omits ${expected}`);
+}
 const connectorDocs = [
   ["connectors/README.md", readText("connectors/README.md")],
   ["connectors/SUBMISSION.md", readText("connectors/SUBMISSION.md")],

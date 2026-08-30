@@ -13,6 +13,14 @@ npm install @huggingbay/coprocessor
 
 For a local checkout, run `npm install .` from the repository root.
 
+## Install the Bay Run skill
+
+- Codex: install the `bay-run` skill at `~/.codex/skills/bay-run`.
+- Claude: install it at `~/.claude/skills/bay-run`.
+- Omarchy: symlink the shared skill into `~/.codex/skills`, `~/.claude/skills`, `~/.pi/agent/skills`, `~/.gemini/config/skills`, and `~/.agents/skills`.
+- Grok CLI: run `grok mcp add --transport http bay-run https://run.huggingbay.xyz/mcp/` with a resource-bound `mcp:demo` token for that MCP resource in `BAY_RUN_TOKEN`.
+- The skill works without Omarchy.
+
 ## Grok and Cursor connector assets
 
 This public repository also contains source-only Grok and Cursor connector
