@@ -26,9 +26,9 @@ const DECISION_EVIDENCE_PROOF_SCHEMA = "bay-run.pin-decision-evidence-proof.v1";
 const POLICY_ID = "bay-run.canonical-pin-decision-policy.v1";
 const POLICY_DIGEST = `sha256:${"b".repeat(64)}`;
 const LIVE_POLICY_DIGEST =
-  "sha256:eb1808545f112b5bbfac4a519b2b555e0cf8960c765ac8599d6d27ca3ea565b2";
-const NEXT_POLICY_DIGEST =
   "sha256:e38b084aabfdeb0f0ef136c719c437d378d95a80f5b1c86f155d2541afc69b06";
+const NEXT_POLICY_DIGEST =
+  "sha256:f9dbed6fb9bd4f2f2cbcd14703082965801b8a090fb9b558db76ad16a45a3cd1";
 const THIRD_POLICY_DIGEST = `sha256:${"c".repeat(64)}`;
 const BENIGN_TRACKING_REASON_CODE = "guard_benign_shipping_tracking";
 const BENIGN_OWNER_INTENT_REASON_CODE = "guard_benign_owner_intent";
@@ -641,19 +641,16 @@ test("shipping tracking exception accepts both rotated policy digests", async ()
   }
 });
 
-test("owner-intent exception rejects the live policy digest", async () => {
+test("owner-intent exception accepts both rotated policy digests", async () => {
   const ownerIntent = BENIGN_GUARD_EXCEPTIONS[1];
-  const response = benignGuardResponse({
-    ...ownerIntent,
-    policyDigest: LIVE_POLICY_DIGEST,
-  });
-  const guarded = guardedFor(response, () => {
-    throw new Error("generation must not run for an owner-intent/live-digest mismatch");
-  }, PRODUCTION_POLICY_TRUST);
-  await assert.rejects(
-    guarded({ input: "Benign exception test input." }),
-    (error) => error instanceof BayRunContractError && error.code === "guard_policy_mismatch",
-  );
+  for (const policyDigest of [LIVE_POLICY_DIGEST, NEXT_POLICY_DIGEST]) {
+    const response = benignGuardResponse({ ...ownerIntent, policyDigest });
+    const outcome = await guardedFor(response, () => "generated", PRODUCTION_POLICY_TRUST)({
+      input: "Benign exception test input.",
+    });
+    assert.equal(outcome.status, "generated");
+    assert.equal(outcome.decision.reason_code, BENIGN_OWNER_INTENT_REASON_CODE);
+  }
 });
 
 for (const exception of BENIGN_GUARD_EXCEPTIONS) {

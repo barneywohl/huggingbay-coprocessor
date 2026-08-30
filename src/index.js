@@ -1,8 +1,14 @@
 import { createHash, createPublicKey, verify as verifySignature } from "node:crypto";
 import { isIP } from "node:net";
 
-const REVIEWED_NEXT_POLICY_DIGEST =
+const CURRENT_POLICY_DIGEST =
   "sha256:e38b084aabfdeb0f0ef136c719c437d378d95a80f5b1c86f155d2541afc69b06";
+const REVIEWED_NEXT_POLICY_DIGEST =
+  "sha256:f9dbed6fb9bd4f2f2cbcd14703082965801b8a090fb9b558db76ad16a45a3cd1";
+const PRODUCTION_POLICY_DIGESTS = Object.freeze([
+  CURRENT_POLICY_DIGEST,
+  REVIEWED_NEXT_POLICY_DIGEST,
+]);
 
 /**
  * Explicit production trust configuration for the v1 Pin proof contract.
@@ -13,17 +19,13 @@ export const BAY_RUN_PRODUCTION_TRUST_V1 = Object.freeze({
   trustedPublicKeySha256:
     "sha256:a03d5e873393aa061bf993d0387dab61d5f39c4fc664fbeb0bded3c9485a2a5e",
   trustedPolicyId: "bay-run.canonical-pin-decision-policy.v1",
-  trustedPolicyDigest:
-    "sha256:eb1808545f112b5bbfac4a519b2b555e0cf8960c765ac8599d6d27ca3ea565b2",
-  trustedPolicyDigests: Object.freeze([
-    "sha256:eb1808545f112b5bbfac4a519b2b555e0cf8960c765ac8599d6d27ca3ea565b2",
-    REVIEWED_NEXT_POLICY_DIGEST,
-  ]),
+  trustedPolicyDigest: CURRENT_POLICY_DIGEST,
+  trustedPolicyDigests: PRODUCTION_POLICY_DIGESTS,
 });
 
 const DEFAULT_BASE_URL = "https://run.huggingbay.xyz";
 const DEFAULT_TIMEOUT_MS = 10_000;
-const SDK_HEADER = "@huggingbay/coprocessor/0.1.7";
+const SDK_HEADER = "@huggingbay/coprocessor/0.1.8";
 const COPROCESSOR_SCHEMA = "bay-run.coprocessor.v1";
 const GUARD_POLICY_SCHEMA = "bay-run.guard-policy.v1";
 const PIN_PROOF_SCHEMA = "bay-run.pin-proof.v1";
@@ -1241,10 +1243,10 @@ function validateInjectionAllowException(policy, summaryName, policyDigest) {
   if (policy.reason_code === BENIGN_OWNER_INTENT_REASON_CODE) {
     if (
       policyDigest !== undefined &&
-      policyDigest !== REVIEWED_NEXT_POLICY_DIGEST
+      !PRODUCTION_POLICY_DIGESTS.includes(policyDigest)
     ) {
       invalidContract(
-        `${summaryName}.policy owner-intent exception requires the reviewed next-server policy digest`,
+        `${summaryName}.policy owner-intent exception requires the current or reviewed next-server policy digest`,
         "guard_policy_mismatch",
       );
     }

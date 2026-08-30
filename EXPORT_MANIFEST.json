@@ -3,7 +3,7 @@
   "public_repository": "https://github.com/barneywohl/huggingbay-coprocessor",
   "package": {
     "name": "@huggingbay/coprocessor",
-    "version": "0.1.7",
+    "version": "0.1.8",
     "repository": "https://github.com/barneywohl/huggingbay-coprocessor",
     "bugs": "https://github.com/barneywohl/huggingbay-coprocessor/issues"
   },
@@ -25,7 +25,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "8162a4729ca5c98361968ae3fc42ad2570272cdddc1055c90dbafd33f4854b3f"
+      "sha256": "7fd61672697c53dee274d8fe210544be6f024fc78fa509f2a2ff1dc0ffcacc7c"
     },
     {
       "path": "SECURITY.md",
@@ -85,19 +85,19 @@
     },
     {
       "path": "package.json",
-      "sha256": "dd2cf1b9b3e28a84df47b44bb5e039b749dfda2cf8b11b6e19daa332dd8dcb12"
+      "sha256": "01723569cde531b505f9a22a7c5262a46d96279d2e84dabd26d29a206abeb233"
     },
     {
       "path": "src/index.d.ts",
-      "sha256": "db56018b60752aa5753c3301bf51e04b423d760fd65be8fe73388c622eaec898"
+      "sha256": "6026be4e9184c159735adb1be29352e777be43de43d5cb9486402f12d33cef5f"
     },
     {
       "path": "src/index.js",
-      "sha256": "93de30d4ab2e0acaad925201d4fbad7ea51dfbbf6efa10a7d5d13ae8eac54570"
+      "sha256": "1c163ee422a4e5a7b350ca66de5019f0244ecf4c5a0b82e7f90303225239872b"
     },
     {
       "path": "verification/validate-connectors.mjs",
-      "sha256": "38bd83a10409013c31652e174badbb0ba3124464a7537b9f04bda053fccf6e91"
+      "sha256": "a9efbf1dc308f10ca729f46c53019403a6a77852d78f1faba9117f25d06f0678"
     },
     {
       "path": "verification/verified-usage.mjs",

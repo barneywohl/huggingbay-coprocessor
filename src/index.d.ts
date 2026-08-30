@@ -3,10 +3,10 @@ export const BAY_RUN_PRODUCTION_TRUST_V1: Readonly<{
   trustedKeyId: "bay-run-pin-v1";
   trustedPublicKeySha256: "sha256:a03d5e873393aa061bf993d0387dab61d5f39c4fc664fbeb0bded3c9485a2a5e";
   trustedPolicyId: "bay-run.canonical-pin-decision-policy.v1";
-  trustedPolicyDigest: "sha256:eb1808545f112b5bbfac4a519b2b555e0cf8960c765ac8599d6d27ca3ea565b2";
+  trustedPolicyDigest: "sha256:e38b084aabfdeb0f0ef136c719c437d378d95a80f5b1c86f155d2541afc69b06";
   trustedPolicyDigests: readonly [
-    "sha256:eb1808545f112b5bbfac4a519b2b555e0cf8960c765ac8599d6d27ca3ea565b2",
     "sha256:e38b084aabfdeb0f0ef136c719c437d378d95a80f5b1c86f155d2541afc69b06",
+    "sha256:f9dbed6fb9bd4f2f2cbcd14703082965801b8a090fb9b558db76ad16a45a3cd1",
   ];
 }>;
 
