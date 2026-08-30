@@ -68,8 +68,9 @@ complete stage result through `result_sha256`; every returned `relevance_score`,
 `raw_score`, and `text` must also exactly match the corresponding receipt-bound
 result row. If one of these fields is present in only one representation, the
 SDK fails closed. Ranked documents are exposed only after every document Guard
-allows and Rerank returns a ranked signal; an abstention exposes no ranked
-documents and pauses for review.
+allows and Rerank returns a ranked signal. A signed, narrowly bounded owner
+summary may proceed with guarded documents when Rerank abstains; other
+abstentions expose no ranked documents and pause for review.
 
 These signatures attest to the declared binding and server metadata only. They
 do not prove execution, code derivation, result truth, answer quality, or safety.

@@ -25,7 +25,7 @@ export const BAY_RUN_PRODUCTION_TRUST_V1 = Object.freeze({
 
 const DEFAULT_BASE_URL = "https://run.huggingbay.xyz";
 const DEFAULT_TIMEOUT_MS = 10_000;
-const SDK_HEADER = "@huggingbay/coprocessor/0.1.8";
+const SDK_HEADER = "@huggingbay/coprocessor/0.1.9";
 const COPROCESSOR_SCHEMA = "bay-run.coprocessor.v1";
 const GUARD_POLICY_SCHEMA = "bay-run.guard-policy.v1";
 const PIN_PROOF_SCHEMA = "bay-run.pin-proof.v1";
@@ -39,6 +39,10 @@ const BENIGN_TRACKING_REASON_CODE = "guard_benign_shipping_tracking";
 const BENIGN_OWNER_INTENT_REASON_CODE = "guard_benign_owner_intent";
 const BENIGN_TRACKING_INDICATORS_FIELD = "benign_tracking_indicators";
 const BENIGN_OWNER_INTENT_INDICATORS_FIELD = "benign_owner_intent_indicators";
+const BOUNDED_OWNER_SUMMARY_INDICATOR = "whole_request_summary_no_click";
+const GUARDED_DOCUMENT_SUMMARY_REASON_CODE = "guarded_document_summary";
+const BOUNDED_OWNER_SUMMARY_PATTERN =
+  /^[ \t]*summarize[.!?][ \t]+do[ \t]+not[ \t]+(?:run[ \t]+or[ \t]+)?click[.!?]?[ \t]*$/i;
 const ACTION_SAFETY_INDICATOR_PATTERNS = Object.freeze([
   [
     "privileged_shell_pipeline",
@@ -1277,6 +1281,34 @@ function validateGuardExceptionPolicyBinding(summary, summaryName, policyDigest)
   }
 }
 
+function hasBoundedOwnerSummaryIntent(
+  body,
+  request,
+  { userGuardAction, documentsAllAllow, actionSafetyOverlay } = {},
+) {
+  const policy = body?.guard?.policy;
+  return (
+    body?.guard?.source === "user_text" &&
+    userGuardAction === "allow" &&
+    request.documents !== undefined &&
+    documentsAllAllow === true &&
+    actionSafetyOverlay !== true &&
+    typeof request.userText === "string" &&
+    !/[\r\n]/.test(request.userText) &&
+    BOUNDED_OWNER_SUMMARY_PATTERN.test(request.userText) &&
+    isRecord(policy) &&
+    policy.schema === GUARD_POLICY_SCHEMA &&
+    policy.decision === "allow" &&
+    policy.reason_code === BENIGN_OWNER_INTENT_REASON_CODE &&
+    Array.isArray(policy[BENIGN_OWNER_INTENT_INDICATORS_FIELD]) &&
+    policy[BENIGN_OWNER_INTENT_INDICATORS_FIELD].length === 1 &&
+    policy[BENIGN_OWNER_INTENT_INDICATORS_FIELD][0] ===
+      BOUNDED_OWNER_SUMMARY_INDICATOR &&
+    Array.isArray(policy.manipulation_indicators) &&
+    policy.manipulation_indicators.length === 0
+  );
+}
+
 function actionSafetyIndicators(value) {
   if (typeof value !== "string") return [];
   return ACTION_SAFETY_INDICATOR_PATTERNS
@@ -1968,6 +2000,15 @@ function validateCoprocessorResponse(body, request, options) {
   const documentsAllAllow =
     hasDocumentContract &&
     documentValidation.actions.every((documentAction) => documentAction === "allow");
+  const boundedOwnerSummaryIntent = hasBoundedOwnerSummaryIntent(
+    body,
+    request,
+    {
+      userGuardAction,
+      documentsAllAllow,
+      actionSafetyOverlay,
+    },
+  );
 
   const canRerank =
     hasDocuments &&
@@ -2038,7 +2079,7 @@ function validateCoprocessorResponse(body, request, options) {
   } else if (actionSafetyOverlay) {
     expectedAction = "escalate";
   } else if (rerankNoSignal) {
-    expectedAction = "escalate";
+    expectedAction = boundedOwnerSummaryIntent ? "allow" : "escalate";
   } else {
     expectedAction = "allow";
   }
@@ -2050,10 +2091,13 @@ function validateCoprocessorResponse(body, request, options) {
   }
   if (
     rerankNoSignal &&
-    body.reason !== "guard_safe_rerank_no_signal"
+    body.reason !==
+      (boundedOwnerSummaryIntent
+        ? GUARDED_DOCUMENT_SUMMARY_REASON_CODE
+        : "guard_safe_rerank_no_signal")
   ) {
     invalidContract(
-      "rerank abstention must preserve its composite escalation reason",
+      "rerank abstention must preserve its composite reason",
       "rerank_evidence_mismatch",
     );
   }
