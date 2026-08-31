@@ -10,6 +10,58 @@ export const BAY_RUN_PRODUCTION_TRUST_V1: Readonly<{
   ];
 }>;
 
+export type BayRunPinProof = {
+  schema: "bay-run.pin-proof.v1";
+  alg: "Ed25519";
+  kid: string;
+  payload_sha256: string;
+  public_key: string;
+  signature: string;
+  key_scope: "configured";
+};
+
+export type BayRunPinReceipt = {
+  schema: "bay-run.pin-receipt.v1";
+  execution_id: string;
+  pin_id: string;
+  route_id: string;
+  model: string;
+  served_weight_sha256: string | null;
+  input_sha256: string;
+  result_sha256: string;
+  idempotency_key_sha256: string;
+  no_spend_evidence: Readonly<Record<string, unknown>>;
+  receipt_id: string;
+  proof: BayRunPinProof;
+};
+
+export type BayRunPinReceiptTrust = {
+  /** Exact configured Ed25519 proof key ID. */
+  trustedKeyId: string;
+  /** SHA-256 of the decoded raw 32-byte Ed25519 public key in the proof. */
+  trustedPublicKeySha256: string;
+};
+
+export type BayRunPinReceiptVerificationOptions =
+  BayRunPinReceiptTrust & {
+    /** Exact original value that the receipt claims to bind. */
+    input: unknown;
+    /** Exact raw result value that the receipt claims to bind. */
+    result: unknown;
+    /** Exact caller-supplied idempotency key that the receipt claims to bind. */
+    idempotencyKey: string;
+  };
+
+export type BayRunPinReceiptVerification = {
+  valid: true;
+  schema: "bay-run.pin-receipt.v1";
+  receiptId: string;
+  executionId: string;
+  pinId: string;
+  keyId: string;
+  signedPayloadFields: readonly string[];
+};
+
 export type BayRunDecisionAction = "allow" | "block" | "escalate" | "abstain";
 
 export type BayRunDecision = {
@@ -195,6 +247,18 @@ export function withBayRun<TInput, TOutput, TPreparedInput = BayRunPreparedInput
   generate: BayRunGenerate<TPreparedInput, TOutput>,
   options: BayRunOptions<TInput, TPreparedInput>,
 ): (input: TInput) => Promise<BayRunOutcome<TOutput>>;
+
+/**
+ * Verify one signed Pin receipt against caller-owned input, result, and key.
+ * Throws a BayRunContractError with a stable code when any binding fails.
+ */
+export function verifyPinReceipt(
+  receipt: BayRunPinReceipt,
+  options: BayRunPinReceiptVerificationOptions,
+): BayRunPinReceiptVerification;
+
+/** @internal Parse package wire JSON while preserving canonical number lexemes. */
+export function parseBayRunJson(text: string): unknown;
 
 export const DEFAULT_BAY_RUN_BASE_URL: string;
 export const BAY_RUN_COPROCESSOR_PATH: "/v1/coprocessor";

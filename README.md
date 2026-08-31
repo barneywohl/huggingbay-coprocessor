@@ -384,6 +384,54 @@ numeric lexemes including signed `0.0` no-spend fields, rejects duplicate keys
 and unpaired surrogates, and fails closed if either canonical form cannot be
 reproduced.
 
+## Offline Pin receipt verification
+
+`verifyPinReceipt(receipt, options)` is a synchronous, network-free verifier for
+one `bay-run.pin-receipt.v1`. Supply the exact original `input`, raw `result`,
+and caller `idempotencyKey`, plus the explicit trusted `trustedKeyId` and
+`trustedPublicKeySha256`. The production trust snapshot can be opted into at a
+call site with `...BAY_RUN_PRODUCTION_TRUST_V1`; it is never an implicit
+default:
+
+```js
+import {
+  BAY_RUN_PRODUCTION_TRUST_V1,
+  verifyPinReceipt,
+} from "@huggingbay/coprocessor";
+
+const verification = verifyPinReceipt(receipt, {
+  input,
+  result,
+  idempotencyKey,
+  ...BAY_RUN_PRODUCTION_TRUST_V1,
+});
+```
+
+The check fails closed with stable error codes when the receipt shape, exact
+signed fields, Ed25519 proof, `receipt_id`, input hash, result hash, or
+idempotency-key hash does not match. A successful return contains only receipt
+metadata; it never echoes the supplied input or result. This authenticates the
+declared receipt bindings only. It does not prove model truth, answer quality,
+policy correctness, safety, or that the declared execution actually occurred.
+
+The packaged `bay-verify` command reads one JSON bundle from a file or stdin:
+
+```json
+{
+  "receipt": { "schema": "bay-run.pin-receipt.v1" },
+  "input": "the exact original input",
+  "result": { "the": "exact raw result" },
+  "idempotency_key": "the-exact-caller-key"
+}
+```
+
+Pass trust explicitly with `--key-id` and `--public-key-sha256`, or use the
+explicit `--production-v1` snapshot. The input is capped at 1 MiB, parsed as
+JSON data only, and produces bounded JSON such as
+`{"status":"verified",...}` or `{"status":"invalid","code":"..."}`.
+The command never performs network access or executes bundle content. A valid
+receipt is not a measured-quality or attested-execution claim.
+
 ## Local checks
 
 ```bash

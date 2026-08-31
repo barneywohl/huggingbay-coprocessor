@@ -77,6 +77,10 @@ const PIN_RECEIPT_SIGNED_FIELDS = Object.freeze([
   "result_sha256",
   "idempotency_key_sha256",
 ]);
+const PIN_RECEIPT_VERIFIER_SIGNED_FIELDS = Object.freeze([
+  ...PIN_RECEIPT_SIGNED_FIELDS,
+  "no_spend_evidence",
+]);
 const PIN_DECISION_SCHEMA = "bay-run.pin-decision.v1";
 const PIN_DECISION_EVIDENCE_SCHEMA = "bay-run.pin-decision-evidence.v1";
 const PIN_DECISION_EVIDENCE_PROOF_SCHEMA = "bay-run.pin-decision-evidence-proof.v1";
@@ -704,6 +708,24 @@ function parseJsonWithRawNumbers(text) {
   skipWhitespace();
   if (offset !== text.length) fail();
   return parsed.value;
+}
+
+function normalizeOfflineVerifierReceipt(receipt) {
+  const noSpendEvidence = receipt.no_spend_evidence;
+  if (!isRecord(noSpendEvidence) || noSpendEvidence[RAW_NUMBER_TOKENS]) {
+    return receipt;
+  }
+
+  // A JavaScript object no longer carries the wire lexeme for the contract's
+  // fixed 0.0 fields. Reattach that contract-defined lexeme on a private copy
+  // so object callers verify the same canonical payload as the wire parser.
+  const normalizedNoSpendEvidence = { ...noSpendEvidence };
+  for (const field of ZERO_SPEND_NUMERIC_FIELDS) {
+    if (Object.is(normalizedNoSpendEvidence[field], 0)) {
+      rememberRawNumber(normalizedNoSpendEvidence, field, "0.0");
+    }
+  }
+  return { ...receipt, no_spend_evidence: normalizedNoSpendEvidence };
 }
 
 function validateZeroSpendEvidence(evidence, name) {
@@ -2573,6 +2595,132 @@ export function withBayRun(generate, options) {
     const output = await generate(preparedInput, context);
     return { status: "generated", output, decision: checked.decision, context };
   };
+}
+
+function normalizePinReceiptVerificationOptions(options) {
+  if (!isRecord(options)) {
+    throw new BayRunInputError(
+      "verifyPinReceipt options are required",
+      { code: "invalid_input" },
+    );
+  }
+  if (!Object.prototype.hasOwnProperty.call(options, "input") || options.input === undefined) {
+    throw new BayRunInputError(
+      "verifyPinReceipt requires the original input",
+      { code: "invalid_input" },
+    );
+  }
+  if (!Object.prototype.hasOwnProperty.call(options, "result") || options.result === undefined) {
+    throw new BayRunInputError(
+      "verifyPinReceipt requires the raw result",
+      { code: "invalid_input" },
+    );
+  }
+  if (
+    typeof options.idempotencyKey !== "string" ||
+    options.idempotencyKey.trim() === ""
+  ) {
+    throw new BayRunInputError(
+      "verifyPinReceipt requires a non-empty idempotency key",
+      { code: "invalid_input" },
+    );
+  }
+  return {
+    input: options.input,
+    result: options.result,
+    idempotencyKey: options.idempotencyKey,
+    trustedProof: normalizeTrustedProof(options),
+  };
+}
+
+function digestVerifierValue(value, name) {
+  try {
+    return sha256Digest(value);
+  } catch (error) {
+    if (error instanceof BayRunError) throw error;
+    throw new BayRunInputError(`${name} must be JSON-compatible`, {
+      code: "invalid_input",
+    });
+  }
+}
+
+/**
+ * Verify one bay-run.pin-receipt.v1 against caller-owned values without I/O.
+ * The successful result intentionally contains receipt metadata only; it
+ * never returns the supplied input or result.
+ */
+export function verifyPinReceipt(receipt, options) {
+  const config = normalizePinReceiptVerificationOptions(options);
+  if (!isRecord(receipt)) {
+    invalidContract("pin receipt must be an object", "evidence_invalid");
+  }
+  if (typeof receipt.pin_id !== "string" || receipt.pin_id.trim() === "") {
+    invalidContract("pin receipt.pin_id must be a non-empty string", "evidence_invalid");
+  }
+  for (const field of PIN_RECEIPT_ALLOWED_FIELDS) {
+    if (!Object.prototype.hasOwnProperty.call(receipt, field)) {
+      invalidContract(`pin receipt.${field} is required`, "evidence_invalid");
+    }
+  }
+  if (!isRecord(receipt.proof)) {
+    invalidContract("pin receipt.proof must contain the exact proof fields", "evidence_invalid");
+  }
+  for (const field of PIN_PROOF_FIELDS) {
+    if (!Object.prototype.hasOwnProperty.call(receipt.proof, field)) {
+      invalidContract(`pin receipt.proof.${field} is required`, "proof_invalid");
+    }
+  }
+
+  // Fail early with the same canonical serializer used by receipt validation.
+  digestVerifierValue(config.input, "input");
+  const resultDigest = digestVerifierValue(config.result, "result");
+  digestVerifierValue(config.idempotencyKey, "idempotencyKey");
+
+  const receiptForVerification = normalizeOfflineVerifierReceipt(receipt);
+  try {
+    validateReceipt(
+      receiptForVerification,
+      receiptForVerification.pin_id,
+      "pin receipt",
+      config.input,
+      config.idempotencyKey,
+      config.trustedProof,
+    );
+  } catch (error) {
+    if (error instanceof BayRunError) throw error;
+    throw new BayRunContractError("pin receipt could not be verified", {
+      code: "canonical_json_invalid",
+    });
+  }
+
+  if (receiptForVerification.result_sha256 !== resultDigest) {
+    invalidContract(
+      "pin receipt.result_sha256 does not match the supplied result",
+      "evidence_result_mismatch",
+    );
+  }
+
+  return Object.freeze({
+    valid: true,
+    schema: PIN_RECEIPT_SCHEMA,
+    receiptId: receiptForVerification.receipt_id,
+    executionId: receiptForVerification.execution_id,
+    pinId: receiptForVerification.pin_id,
+    keyId: config.trustedProof.keyId,
+    signedPayloadFields: PIN_RECEIPT_VERIFIER_SIGNED_FIELDS,
+  });
+}
+
+/** @internal Parse bounded wire JSON while preserving signed number lexemes. */
+export function parseBayRunJson(text) {
+  if (typeof text !== "string") {
+    throw new BayRunInputError("JSON input must be text", { code: "invalid_json" });
+  }
+  try {
+    return parseJsonWithRawNumbers(text);
+  } catch {
+    throw new BayRunInputError("invalid JSON", { code: "invalid_json" });
+  }
 }
 
 export const DEFAULT_BAY_RUN_BASE_URL = DEFAULT_BASE_URL;

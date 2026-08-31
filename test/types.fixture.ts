@@ -1,5 +1,7 @@
 import {
   BAY_RUN_PRODUCTION_TRUST_V1,
+  type BayRunPinReceipt,
+  type BayRunPinReceiptVerification,
   type BayRunOutcome,
   type BayRunRequestAdapter,
   type OpenAICompatibleRequest,
@@ -7,7 +9,17 @@ import {
   genericAdapter,
   openAICompatibleAdapter,
   withBayRun,
+  verifyPinReceipt,
 } from "../src/index.js";
+
+declare const pinReceipt: BayRunPinReceipt;
+const offlineVerification: BayRunPinReceiptVerification = verifyPinReceipt(pinReceipt, {
+  input: { userText: "Find reset help" },
+  result: { labels: [] },
+  idempotencyKey: "offline-types-fixture",
+  ...BAY_RUN_PRODUCTION_TRUST_V1,
+});
+void offlineVerification;
 
 const openAIRequest: OpenAICompatibleRequest = {
   messages: [{ role: "user", content: "Find reset help" }],

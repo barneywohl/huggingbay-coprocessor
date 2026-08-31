@@ -1,0 +1,244 @@
+#!/usr/bin/env node
+
+import { closeSync, openSync, readSync, statSync } from "node:fs";
+import { TextDecoder } from "node:util";
+
+import {
+  BAY_RUN_PRODUCTION_TRUST_V1,
+  parseBayRunJson,
+  verifyPinReceipt,
+} from "../src/index.js";
+
+const MAX_INPUT_BYTES = 1_048_576;
+
+class CliError extends Error {
+  constructor(code) {
+    super(code);
+    this.code = code;
+  }
+}
+
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasOwn(value, field) {
+  return Object.prototype.hasOwnProperty.call(value, field);
+}
+
+function fail(code) {
+  throw new CliError(code);
+}
+
+function parseArgs(args) {
+  let file = undefined;
+  let keyId;
+  let publicKeySha256;
+  let production = false;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index];
+    if (argument === "--production-v1") {
+      production = true;
+      continue;
+    }
+    if (argument === "--file") {
+      if (file !== undefined || index + 1 >= args.length) fail("invalid_cli_arguments");
+      file = args[++index];
+      if (file === "") fail("invalid_cli_arguments");
+      continue;
+    }
+    if (argument === "--key-id" || argument === "--trusted-key-id") {
+      if (keyId !== undefined || index + 1 >= args.length) fail("invalid_cli_arguments");
+      keyId = args[++index];
+      if (keyId === "") fail("invalid_cli_arguments");
+      continue;
+    }
+    if (
+      argument === "--public-key-sha256" ||
+      argument === "--trusted-public-key-sha256"
+    ) {
+      if (publicKeySha256 !== undefined || index + 1 >= args.length) {
+        fail("invalid_cli_arguments");
+      }
+      publicKeySha256 = args[++index];
+      if (publicKeySha256 === "") fail("invalid_cli_arguments");
+      continue;
+    }
+    if (argument === "-") {
+      if (file !== undefined) fail("invalid_cli_arguments");
+      file = "-";
+      continue;
+    }
+    if (argument === "--help" || argument === "-h") {
+      return { help: true };
+    }
+    if (argument.startsWith("-")) fail("invalid_cli_arguments");
+    if (file !== undefined) fail("invalid_cli_arguments");
+    file = argument;
+  }
+
+  const environmentKeyId =
+    process.env.BAY_RUN_TRUSTED_KEY_ID ?? process.env.BAY_RUN_PIN_ED25519_KEY_ID;
+  const environmentPublicKeySha256 =
+    process.env.BAY_RUN_TRUSTED_PUBLIC_KEY_SHA256 ??
+    process.env.BAY_RUN_PIN_ED25519_PUBLIC_KEY_SHA256;
+  return {
+    file,
+    trustedKeyId:
+      keyId ?? (production ? BAY_RUN_PRODUCTION_TRUST_V1.trustedKeyId : environmentKeyId),
+    trustedPublicKeySha256:
+      publicKeySha256 ??
+      (production
+        ? BAY_RUN_PRODUCTION_TRUST_V1.trustedPublicKeySha256
+        : environmentPublicKeySha256),
+    help: false,
+  };
+}
+
+function readFileBounded(path) {
+  let stats;
+  try {
+    stats = statSync(path);
+  } catch {
+    fail("input_unreadable");
+  }
+  if (!stats.isFile()) fail("input_unreadable");
+  if (stats.size > MAX_INPUT_BYTES) fail("input_too_large");
+  let descriptor;
+  try {
+    descriptor = openSync(path, "r");
+    const bytes = Buffer.allocUnsafe(MAX_INPUT_BYTES + 1);
+    let length = 0;
+    while (length < bytes.length) {
+      const count = readSync(descriptor, bytes, length, bytes.length - length, null);
+      if (count === 0) break;
+      length += count;
+    }
+    if (length > MAX_INPUT_BYTES) fail("input_too_large");
+    return bytes.subarray(0, length);
+  } catch (error) {
+    if (error instanceof CliError) throw error;
+    fail("input_unreadable");
+  } finally {
+    if (descriptor !== undefined) closeSync(descriptor);
+  }
+}
+
+async function readStdinBounded() {
+  const chunks = [];
+  let total = 0;
+  for await (const chunk of process.stdin) {
+    const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    total += bytes.length;
+    if (total > MAX_INPUT_BYTES) {
+      process.stdin.destroy();
+      fail("input_too_large");
+    }
+    chunks.push(bytes);
+  }
+  return Buffer.concat(chunks, total);
+}
+
+function decodeJson(bytes) {
+  let text;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    fail("invalid_encoding");
+  }
+  try {
+    return parseBayRunJson(text);
+  } catch (error) {
+    if (error?.code === "invalid_json") throw error;
+    fail("invalid_json");
+  }
+}
+
+function extractBundle(packet) {
+  if (!isRecord(packet)) fail("invalid_bundle");
+  const idempotencyFields = ["idempotency_key", "idempotencyKey"].filter((field) =>
+    hasOwn(packet, field),
+  );
+  if (idempotencyFields.length !== 1) fail("invalid_bundle");
+
+  const inputPresent = hasOwn(packet, "input");
+  let receipt;
+  let result;
+  if (hasOwn(packet, "receipt")) {
+    if (hasOwn(packet, "response")) fail("invalid_bundle");
+    if (!inputPresent || !hasOwn(packet, "result")) fail("invalid_bundle");
+    receipt = packet.receipt;
+    result = packet.result;
+  } else if (hasOwn(packet, "response")) {
+    if (!inputPresent || !isRecord(packet.response)) fail("invalid_bundle");
+    if (!hasOwn(packet.response, "receipt") || !hasOwn(packet.response, "result")) {
+      fail("invalid_bundle");
+    }
+    receipt = packet.response.receipt;
+    result = packet.response.result;
+  } else {
+    fail("invalid_bundle");
+  }
+
+  return {
+    receipt,
+    input: packet.input,
+    result,
+    idempotencyKey: packet[idempotencyFields[0]],
+  };
+}
+
+function output(value) {
+  process.stdout.write(`${JSON.stringify(value)}\n`);
+}
+
+function verificationOutput(error) {
+  const code = typeof error?.code === "string" ? error.code : "verification_failed";
+  output({ status: "invalid", code });
+  return 1;
+}
+
+async function main() {
+  let args;
+  try {
+    args = parseArgs(process.argv.slice(2));
+  } catch (error) {
+    return verificationOutput(error);
+  }
+  if (args.help) {
+    output({
+      status: "usage",
+      command: "bay-verify",
+      max_input_bytes: MAX_INPUT_BYTES,
+    });
+    return 0;
+  }
+
+  try {
+    const bytes = args.file && args.file !== "-"
+      ? readFileBounded(args.file)
+      : await readStdinBounded();
+    const bundle = extractBundle(decodeJson(bytes));
+    const verified = verifyPinReceipt(bundle.receipt, {
+      input: bundle.input,
+      result: bundle.result,
+      idempotencyKey: bundle.idempotencyKey,
+      trustedKeyId: args.trustedKeyId,
+      trustedPublicKeySha256: args.trustedPublicKeySha256,
+    });
+    output({
+      status: "verified",
+      receipt_id: verified.receiptId,
+      execution_id: verified.executionId,
+      pin_id: verified.pinId,
+      key_id: verified.keyId,
+      signed_payload_fields: verified.signedPayloadFields,
+    });
+    return 0;
+  } catch (error) {
+    return verificationOutput(error);
+  }
+}
+
+process.exitCode = await main();

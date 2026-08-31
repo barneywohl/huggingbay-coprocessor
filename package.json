@@ -5,6 +5,9 @@
   "type": "module",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
+  "bin": {
+    "bay-verify": "./bin/bay-verify"
+  },
   "sideEffects": false,
   "engines": {
     "node": ">=18.17"
@@ -28,6 +31,7 @@
   },
   "files": [
     "src/",
+    "bin/",
     "examples/",
     "README.md",
     "LICENSE"
