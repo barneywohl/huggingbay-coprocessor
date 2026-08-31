@@ -6,7 +6,7 @@
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
   "bin": {
-    "bay-verify": "./bin/bay-verify"
+    "bay-verify": "bin/bay-verify"
   },
   "sideEffects": false,
   "engines": {
