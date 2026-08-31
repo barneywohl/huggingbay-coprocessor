@@ -257,7 +257,7 @@ export function verifyPinReceipt(
   options: BayRunPinReceiptVerificationOptions,
 ): BayRunPinReceiptVerification;
 
-/** @internal Parse package wire JSON while preserving canonical number lexemes. */
+/** @internal Parse package wire JSON while preserving signed-number metadata. */
 export function parseBayRunJson(text: string): unknown;
 
 export const DEFAULT_BAY_RUN_BASE_URL: string;

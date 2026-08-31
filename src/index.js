@@ -441,6 +441,52 @@ function canonicalJsonString(value, ensureAscii) {
   return `${result}"`;
 }
 
+function canonicalJsonNumber(value, token) {
+  if (!Number.isFinite(value)) {
+    throw new TypeError("canonical JSON cannot contain a non-finite number");
+  }
+
+  // Pin receipts are hashed with Python json.dumps(..., separators=(',', ':')).
+  // The HTTP response may use a different, but still valid, JSON number
+  // spelling. Normalize the parsed wire token to Python's float spelling so
+  // receipt.result_sha256 remains verifiable across that transport boundary.
+  const match = /^(-?)(\d+)(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/.exec(token);
+  if (!match) return JSON.stringify(value);
+  const [, sign, integerPart, fractionPart = "", exponentPart] = match;
+  const hasFloatMarker = fractionPart !== "" || exponentPart !== undefined;
+
+  // An integer token is an integer in the server's JSON model. Keep it as an
+  // integer even when its JavaScript Number value would also admit exponent
+  // notation.
+  if (!hasFloatMarker) return token;
+
+  let digits = `${integerPart}${fractionPart}`;
+  const firstNonZero = digits.search(/[1-9]/);
+  if (firstNonZero < 0) return `${sign}0.0`;
+
+  const exponent =
+    integerPart.length - firstNonZero - 1 + Number(exponentPart ?? 0);
+  digits = digits.slice(firstNonZero).replace(/0+$/, "");
+  if (exponent < -4 || exponent >= 16) {
+    const mantissa =
+      digits.length === 1 ? digits : `${digits[0]}.${digits.slice(1)}`;
+    const exponentSign = exponent < 0 ? "-" : "+";
+    return `${sign}${mantissa}e${exponentSign}${String(Math.abs(exponent)).padStart(2, "0")}`;
+  }
+
+  const decimalIndex = exponent + 1;
+  let result;
+  if (decimalIndex <= 0) {
+    result = `0.${"0".repeat(-decimalIndex)}${digits}`;
+  } else if (decimalIndex >= digits.length) {
+    result = `${digits}${"0".repeat(decimalIndex - digits.length)}`;
+  } else {
+    result = `${digits.slice(0, decimalIndex)}.${digits.slice(decimalIndex)}`;
+  }
+  if (!result.includes(".")) result += ".0";
+  return `${sign}${result}`;
+}
+
 function compareCanonicalKeys(left, right) {
   let leftIndex = 0;
   let rightIndex = 0;
@@ -465,11 +511,11 @@ function serializeCanonicalJson(value, parent, key, ensureAscii) {
     const field = String(key);
     const raw = parent?.[RAW_NUMBER_TOKENS]?.get(field);
     const mutated = parent?.[RAW_NUMBER_MUTATIONS]?.has(field);
-    if (!mutated && raw !== undefined && Number(raw) === value) return raw;
-    if (!Number.isFinite(value)) {
-      throw new TypeError("canonical JSON cannot contain a non-finite number");
-    }
-    return JSON.stringify(value);
+    const token =
+      !mutated && raw !== undefined && Number(raw) === value
+        ? raw
+        : JSON.stringify(value);
+    return canonicalJsonNumber(value, token);
   }
   if (Array.isArray(value)) {
     return `[${value

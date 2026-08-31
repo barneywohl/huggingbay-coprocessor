@@ -205,6 +205,18 @@ model-weight identity, answer truth, or quality.
 the middleware must verify the complete receipt-bound evidence before it allows,
 blocks, or pauses caller-owned generation. It does not rely on the REST default.
 
+With a resource-scoped demo token already present in `BAY_RUN_TOKEN`, run the
+bounded live canary from a checkout with:
+
+```sh
+node verification/live-coprocessor-canary.mjs
+```
+
+It makes exactly three calls: zero documents, one benign document that must
+allow and invoke the generator, and one poisoned document that must block
+without invoking it. The canary uses `omit_raw_result: false`, fails closed,
+and prints only bounded pass/fail metadata.
+
 ## OpenAI-compatible request
 
 The adapter only needs a provider-shaped request; no provider package is
@@ -380,9 +392,10 @@ the server's `pin_protocol._canonical`: sorted keys, compact separators,
 `default=str`, and `ensure_ascii=False`, with valid Unicode emitted as UTF-8.
 Child idempotency keys intentionally use the separate Python default
 `ensure_ascii=True` serializer described above. The verifier preserves wire
-numeric lexemes including signed `0.0` no-spend fields, rejects duplicate keys
-and unpaired surrogates, and fails closed if either canonical form cannot be
-reproduced.
+number metadata for mutation checks, normalizes valid wire float spellings to
+the server's Python canonical number representation, and requires the exact
+wire `0.0` no-spend fields. It rejects duplicate keys and unpaired surrogates,
+and fails closed if either canonical form cannot be reproduced.
 
 ## Offline Pin receipt verification
 

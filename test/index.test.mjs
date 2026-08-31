@@ -30,6 +30,7 @@ const LIVE_POLICY_DIGEST =
 const NEXT_POLICY_DIGEST =
   "sha256:0aedfb921cd643cbe8e4f9ac264539d5adc699d445030e66cab4e9d56ff68d48";
 const THIRD_POLICY_DIGEST = `sha256:${"c".repeat(64)}`;
+const CROSS_LANGUAGE_SCORE = 1.488571456320642e-6;
 const BENIGN_TRACKING_REASON_CODE = "guard_benign_shipping_tracking";
 const BENIGN_OWNER_INTENT_REASON_CODE = "guard_benign_owner_intent";
 const BOUNDED_OWNER_SUMMARY_INDICATOR = "whole_request_summary_no_click";
@@ -103,25 +104,52 @@ function quoteJson(value, ensureAscii = false) {
   return `${result}"`;
 }
 
-function canonicalJson(value, ensureAscii = false, key = undefined) {
+function serverNumber(value) {
+  const token = JSON.stringify(value);
+  const match = /^(-?)(\d+)(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/.exec(token);
+  if (!match) return token;
+  const [, sign, integerPart, fractionPart = "", exponentPart] = match;
+  const hasFloatMarker = fractionPart !== "" || exponentPart !== undefined;
+  if (!hasFloatMarker) return token;
+  let digits = `${integerPart}${fractionPart}`;
+  const firstNonZero = digits.search(/[1-9]/);
+  if (firstNonZero < 0) return `${sign}0.0`;
+  const exponent =
+    integerPart.length - firstNonZero - 1 + Number(exponentPart ?? 0);
+  digits = digits.slice(firstNonZero).replace(/0+$/, "");
+  if (exponent < -4 || exponent >= 16) {
+    const mantissa =
+      digits.length === 1 ? digits : `${digits[0]}.${digits.slice(1)}`;
+    return `${sign}${mantissa}e${exponent < 0 ? "-" : "+"}${String(Math.abs(exponent)).padStart(2, "0")}`;
+  }
+  const decimalIndex = exponent + 1;
+  let result;
+  if (decimalIndex <= 0) result = `0.${"0".repeat(-decimalIndex)}${digits}`;
+  else if (decimalIndex >= digits.length) result = `${digits}${"0".repeat(decimalIndex - digits.length)}`;
+  else result = `${digits.slice(0, decimalIndex)}.${digits.slice(decimalIndex)}`;
+  if (!result.includes(".")) result += ".0";
+  return `${sign}${result}`;
+}
+
+function canonicalJson(value, ensureAscii = false, key = undefined, numberSerializer = JSON.stringify) {
   if (value === null) return "null";
   if (value === undefined) return undefined;
   if (typeof value === "string") return quoteJson(value, ensureAscii);
   if (typeof value === "boolean") return value ? "true" : "false";
   if (typeof value === "number") {
     if (NO_SPEND_FIELDS.has(String(key)) && Object.is(value, 0)) return "0.0";
-    return JSON.stringify(value);
+    return numberSerializer(value);
   }
   if (Array.isArray(value)) {
     return `[${value
-      .map((item, index) => canonicalJson(item, ensureAscii, index) ?? "null")
+      .map((item, index) => canonicalJson(item, ensureAscii, index, numberSerializer) ?? "null")
       .join(",")}]`;
   }
   if (typeof value === "object") {
     return `{${Object.keys(value)
       .sort(compareCodePoints)
       .map((name) => {
-        const serialized = canonicalJson(value[name], ensureAscii, name);
+        const serialized = canonicalJson(value[name], ensureAscii, name, numberSerializer);
         return serialized === undefined
           ? undefined
           : `${quoteJson(name, ensureAscii)}:${serialized}`;
@@ -132,23 +160,27 @@ function canonicalJson(value, ensureAscii = false, key = undefined) {
   throw new TypeError(`unsupported JSON fixture value: ${typeof value}`);
 }
 
+function serverCanonicalJson(value, ensureAscii = false, key = undefined) {
+  return canonicalJson(value, ensureAscii, key, serverNumber);
+}
+
 function digestBytes(value) {
   return `sha256:${createHash("sha256").update(value).digest("hex")}`;
 }
 
-function digestJson(value) {
-  return digestBytes(Buffer.from(canonicalJson(value), "utf8"));
+function digestJson(value, canonicalizer = canonicalJson) {
+  return digestBytes(Buffer.from(canonicalizer(value), "utf8"));
 }
 
-function childStageKey(pinId, input) {
+function childStageKey(pinId, input, canonicalizer = canonicalJson) {
   return createHash("sha256")
-    .update(`${pinId}\u0000${canonicalJson(input, true)}`, "utf8")
+    .update(`${pinId}\u0000${canonicalizer(input, true)}`, "utf8")
     .digest("hex")
     .slice(0, 32);
 }
 
-function proof(payload, schema) {
-  const bytes = Buffer.from(canonicalJson(payload), "utf8");
+function proof(payload, schema, canonicalizer = canonicalJson) {
+  const bytes = Buffer.from(canonicalizer(payload), "utf8");
   return {
     schema,
     alg: "Ed25519",
@@ -160,7 +192,7 @@ function proof(payload, schema) {
   };
 }
 
-function makeReceipt(pinId, model, input, result, executionId) {
+function makeReceipt(pinId, model, input, result, executionId, canonicalizer = canonicalJson) {
   const payload = {
     schema: PIN_RECEIPT_SCHEMA,
     execution_id: executionId,
@@ -168,20 +200,25 @@ function makeReceipt(pinId, model, input, result, executionId) {
     route_id: pinId,
     model,
     served_weight_sha256: null,
-    input_sha256: digestJson(input),
-    result_sha256: digestJson(result),
-    idempotency_key_sha256: digestJson(childStageKey(pinId, input)),
+    input_sha256: digestJson(input, canonicalizer),
+    result_sha256: digestJson(result, canonicalizer),
+    idempotency_key_sha256: digestJson(childStageKey(pinId, input, canonicalizer), canonicalizer),
     no_spend_evidence: NO_SPEND,
   };
-  const receiptProof = proof(payload, PIN_PROOF_SCHEMA);
+  const receiptProof = proof(payload, PIN_PROOF_SCHEMA, canonicalizer);
   return {
     ...payload,
-    receipt_id: digestJson({ ...payload, proof: receiptProof }),
+    receipt_id: digestJson({ ...payload, proof: receiptProof }, canonicalizer),
     proof: receiptProof,
   };
 }
 
-function makeDecisionEvidence(receipt, decision, policyDigest = POLICY_DIGEST) {
+function makeDecisionEvidence(
+  receipt,
+  decision,
+  policyDigest = POLICY_DIGEST,
+  canonicalizer = canonicalJson,
+) {
   const payload = {
     schema: DECISION_EVIDENCE_SCHEMA,
     receipt_id: receipt.receipt_id,
@@ -189,11 +226,11 @@ function makeDecisionEvidence(receipt, decision, policyDigest = POLICY_DIGEST) {
     pin_id: receipt.pin_id,
     input_sha256: receipt.input_sha256,
     result_sha256: receipt.result_sha256,
-    decision_sha256: digestJson(decision),
+    decision_sha256: digestJson(decision, canonicalizer),
     policy_contract_id: POLICY_ID,
     policy_contract_digest: policyDigest,
   };
-  const evidenceProof = proof(payload, DECISION_EVIDENCE_PROOF_SCHEMA);
+  const evidenceProof = proof(payload, DECISION_EVIDENCE_PROOF_SCHEMA, canonicalizer);
   return { ...payload, proof: evidenceProof };
 }
 
@@ -207,10 +244,13 @@ function guardStage(
     policyDigest = POLICY_DIGEST,
     label: labelOverride,
     reasonCode: reasonCodeOverride,
+    result: resultOverride,
+    score: scoreOverride,
+    canonicalizer = canonicalJson,
   } = {},
 ) {
   const label = labelOverride ?? (action === "allow" ? "SAFE" : "INJECTION");
-  const score = action === "allow" ? 0.99 : 0.88;
+  const score = scoreOverride ?? (action === "allow" ? 0.99 : 0.88);
   const reasonCode =
     reasonCodeOverride ??
     (action === "allow"
@@ -218,7 +258,7 @@ function guardStage(
       : action === "block"
         ? "guard_injection_detected"
         : "guard_result_requires_review");
-  const result = {
+  const result = resultOverride ?? {
     model: "sdk-test-guard",
     labels: [{ label, score }],
   };
@@ -238,13 +278,14 @@ function guardStage(
     input,
     result,
     executionId,
+    canonicalizer,
   );
   const stage = {
     pin_id: GUARD_PIN_ID,
     execution_id: executionId,
     result,
     decision,
-    decision_evidence: makeDecisionEvidence(receipt, decision, policyDigest),
+    decision_evidence: makeDecisionEvidence(receipt, decision, policyDigest, canonicalizer),
     receipt,
     no_spend_evidence: NO_SPEND,
     verified: false,
@@ -382,6 +423,9 @@ function coprocessorResponse({
   guardLabel,
   guardReasonCode,
   guardPolicyOverrides,
+  guardResult,
+  guardScore,
+  guardCanonicalizer = canonicalJson,
   boundedOwnerSummaryIntent = false,
 } = {}) {
   const hasDocuments = documents !== undefined;
@@ -389,6 +433,9 @@ function coprocessorResponse({
     policyDigest,
     label: guardLabel,
     reasonCode: guardReasonCode,
+    result: guardResult,
+    score: guardScore,
+    canonicalizer: guardCanonicalizer,
   });
   const userSummary = guardSummary(userStage, guardPolicyOverrides);
   const documentStages = [];
@@ -780,6 +827,65 @@ test("withBayRun guards every document and exposes ranked documents only after a
   assert.deepEqual(
     outcome.context.bayRunResponse.evidence.document_guards.map((row) => [row.source, row.document_index]),
     [["document", 0], ["document", 1]],
+  );
+});
+
+test("normalizes valid wire float spellings to the signed server canonical form", async () => {
+  const response = coprocessorResponse({
+    guardResult: {
+      model: "sdk-test-guard",
+      labels: [
+        { label: "SAFE", score: 0.99 },
+        { label: "INJECTION", score: CROSS_LANGUAGE_SCORE },
+      ],
+    },
+    guardCanonicalizer: serverCanonicalJson,
+  });
+  const wire = wireJson(response);
+  assert.match(wire, /0\.000001488571456320642/);
+  assert.match(serverCanonicalJson(response.evidence.guard.result), /1\.488571456320642e-06/);
+  assert.notEqual(
+    digestJson(response.evidence.guard.result),
+    response.evidence.guard.receipt.result_sha256,
+  );
+
+  const calls = [];
+  let generationCalls = 0;
+  const outcome = await guardedFor(
+    response,
+    () => {
+      generationCalls += 1;
+      return "generated";
+    },
+    { calls },
+  )({ input: "Find reset help" });
+
+  assert.equal(outcome.status, "generated");
+  assert.equal(generationCalls, 1);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].body.omit_raw_result, false);
+});
+
+test("a changed wire number still fails closed after canonical normalization", async () => {
+  const response = coprocessorResponse({
+    guardResult: {
+      model: "sdk-test-guard",
+      labels: [
+        { label: "SAFE", score: 0.99 },
+        { label: "INJECTION", score: CROSS_LANGUAGE_SCORE },
+      ],
+    },
+    guardCanonicalizer: serverCanonicalJson,
+  });
+  response.evidence.guard.result.labels[1].score = 2.488571456320642e-6;
+
+  await assert.rejects(
+    guardedFor(response, () => {
+      throw new Error("generation must not run after a changed signed result");
+    })({ input: "Find reset help" }),
+    (error) =>
+      error instanceof BayRunContractError &&
+      error.code === "evidence_result_mismatch",
   );
 });
 
