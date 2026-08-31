@@ -3,14 +3,14 @@
   "public_repository": "https://github.com/barneywohl/huggingbay-coprocessor",
   "package": {
     "name": "@huggingbay/coprocessor",
-    "version": "0.1.12",
+    "version": "0.1.13",
     "repository": "https://github.com/barneywohl/huggingbay-coprocessor",
     "bugs": "https://github.com/barneywohl/huggingbay-coprocessor/issues"
   },
   "status": {
     "repository_created": true,
     "repository_pushed": true,
-    "npm_published": true,
+    "npm_published": false,
     "connector_submitted": true,
     "connector_approved": false
   },
@@ -25,7 +25,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "8b6a7ee1048fd738ebb99654d1686cf080ed33ac468504ee0798158a09347aef"
+      "sha256": "63e2d8c5aa6ac24b6f328b65b3d04d5f0208a8b320792338e9ceae79334bbacd"
     },
     {
       "path": "SECURITY.md",
@@ -89,7 +89,11 @@
     },
     {
       "path": "package.json",
-      "sha256": "1260b1ef64a0d905039c143025d17eef2515299dd99da3e00e3a41c7c2fd8448"
+      "sha256": "aaa64933b7e50b3024186675388910a447e988e237e44eb2d23564d831b3452f"
+    },
+    {
+      "path": "skills/bay-run/SKILL.md",
+      "sha256": "f41d21ba9fef59e536fdd826e73f6556a3d2a5ae351730e44db562b9038b184b"
     },
     {
       "path": "src/index.d.ts",
@@ -100,8 +104,24 @@
       "sha256": "d47697b4b64fd0ec79e931689ce7defde0a5210d03dae929c8921905a10ac7f8"
     },
     {
+      "path": "test/index.test.mjs",
+      "sha256": "d542c37be0c994a8dd9f3b294132515578772c511f9b3601a525c2ed1f16bba0"
+    },
+    {
+      "path": "test/offline-verifier.test.mjs",
+      "sha256": "d30f3ceb7fc81418be608f00e51e6b8382f80ce69d8d6a9ab3cad995afd5d7c5"
+    },
+    {
+      "path": "test/types.fixture.ts",
+      "sha256": "097458fef279ce8d6db8bd5c0f0323d310cd54f5bf1044aaa3592ca02f795d1c"
+    },
+    {
+      "path": "verification/pack-smoke.mjs",
+      "sha256": "d8d43c86592f3949beaf548228a56a5afd39d6b9d06f75575575641417518270"
+    },
+    {
       "path": "verification/validate-connectors.mjs",
-      "sha256": "63a99244bcd3746ca3a8c05f8785fe2582df16d17aa4de2ef6fbec1acfb41f2a"
+      "sha256": "9358925a0865e0bcc418037e3d9930a44aaf15cfe4dab0be471e5f16f6fd0a48"
     },
     {
       "path": "verification/verified-usage.mjs",
@@ -111,7 +131,7 @@
   "exclusions": [
     "All .git metadata, commit history, branches, and remotes",
     "All monorepo files outside the explicit allowlist",
-    "Package tests, fixtures, lockfiles, node_modules, and caches",
+    "Package lockfiles, node_modules, and caches",
     "The helpdesk integration and unrelated connector verticals",
     "Existing internal connector audit/submission packets and private runbooks",
     "Cloud, deployment, billing, database, operator, and service-infrastructure configuration",

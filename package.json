@@ -1,6 +1,6 @@
 {
   "name": "@huggingbay/coprocessor",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "Provider-neutral, Guard-first Bay Run middleware for caller-owned generation pipelines",
   "type": "module",
   "main": "./src/index.js",
@@ -33,6 +33,10 @@
     "src/",
     "bin/",
     "examples/",
+    "test/",
+    "verification/verified-usage.mjs",
+    "verification/pack-smoke.mjs",
+    "skills/bay-run/",
     "README.md",
     "LICENSE"
   ],
@@ -47,6 +51,7 @@
     "test": "node --test test/*.test.mjs",
     "test:types": "npm exec --yes --package=typescript@7.0.2 -- tsc --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM --skipLibCheck test/types.fixture.ts",
     "test:smoke": "node verification/verified-usage.mjs",
+    "test:pack": "node verification/pack-smoke.mjs",
     "pack:dry-run": "npm pack --dry-run --json"
   },
   "repository": {

@@ -13,6 +13,10 @@ npm install @huggingbay/coprocessor
 
 For a local checkout, run `npm install .` from the repository root.
 
+The npm package includes the reviewed `skills/bay-run/` source used by the
+installation guidance below. Connector assets and the live canary remain
+repository-checkout material.
+
 ## Install the [Bay Run skill](skills/bay-run/SKILL.md)
 
 The canonical source is [`skills/bay-run/`](skills/bay-run/). From this public
@@ -61,8 +65,10 @@ assets do not create credentials or claim provider approval. The checked-in
 provider allowlist is exactly `["coprocessor", "run_pin", "solve_task"]`; the
 Cursor MCP configuration is URL-only at `https://run.huggingbay.xyz/mcp/`.
 
-See the [connector overview](connectors/README.md), [Grok setup](connectors/grok-custom-connector.md),
-[Cursor setup](connectors/cursor-mcp.md), and [submission guidance](connectors/SUBMISSION.md).
+See the [connector overview](https://github.com/barneywohl/huggingbay-coprocessor/blob/main/connectors/README.md),
+[Grok setup](https://github.com/barneywohl/huggingbay-coprocessor/blob/main/connectors/grok-custom-connector.md),
+[Cursor setup](https://github.com/barneywohl/huggingbay-coprocessor/blob/main/connectors/cursor-mcp.md),
+and [submission guidance](https://github.com/barneywohl/huggingbay-coprocessor/blob/main/connectors/SUBMISSION.md).
 The connector policy fails closed on unavailable, unauthenticated, or
 malformed MCP responses. Before sending data, read Bay Run's [privacy policy](https://run.huggingbay.xyz/privacy)
 and [data policy](https://run.huggingbay.xyz/.well-known/data-policy.json).
@@ -206,7 +212,7 @@ the middleware must verify the complete receipt-bound evidence before it allows,
 blocks, or pauses caller-owned generation. It does not rely on the REST default.
 
 With a resource-scoped demo token already present in `BAY_RUN_TOKEN`, run the
-bounded live canary from a checkout with:
+bounded live canary from a repository checkout with:
 
 ```sh
 node verification/live-coprocessor-canary.mjs
@@ -445,16 +451,24 @@ JSON data only, and produces bounded JSON such as
 The command never performs network access or executes bundle content. A valid
 receipt is not a measured-quality or attested-execution claim.
 
-## Local checks
+## Local and packed-artifact checks
 
 ```bash
 node --check src/index.js
+npm test
+npm run test:types
 npm run pack:dry-run
 npm run test:smoke
+npm run test:pack
 ```
 
-The verification example uses an in-process HTTP failure stub. It does not
-send data to Bay Run, a provider, a payment rail, or an external registry.
+`npm run test:pack` packs the current package into a temporary directory,
+installs that extracted artifact without lifecycle scripts, and runs the
+published `check`, `test`, `test:types`, `test:smoke`, and `pack:dry-run`
+scripts from the extracted package. The verification example uses an
+in-process HTTP failure stub. These checks do not send data to Bay Run, a
+provider, or a payment rail; the type check may obtain its pinned TypeScript
+tool through npm.
 
 ## License
 
