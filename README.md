@@ -126,10 +126,10 @@ trustedPublicKeySha256:
   "sha256:a03d5e873393aa061bf993d0387dab61d5f39c4fc664fbeb0bded3c9485a2a5e",
 trustedPolicyId: "bay-run.canonical-pin-decision-policy.v1",
 trustedPolicyDigest:
-  "sha256:f9dbed6fb9bd4f2f2cbcd14703082965801b8a090fb9b558db76ad16a45a3cd1",
-trustedPolicyDigests: [
-  "sha256:f9dbed6fb9bd4f2f2cbcd14703082965801b8a090fb9b558db76ad16a45a3cd1",
   "sha256:8e96163e816880f1e62e8307964b3268c97ba496a5a96bf492e0d97d3b12be82",
+trustedPolicyDigests: [
+  "sha256:8e96163e816880f1e62e8307964b3268c97ba496a5a96bf492e0d97d3b12be82",
+  "sha256:0aedfb921cd643cbe8e4f9ac264539d5adc699d445030e66cab4e9d56ff68d48",
 ],
 ```
 
@@ -140,8 +140,8 @@ The raw Guard result is preserved. An `allow` summary whose label is
 non-empty string `benign_owner_intent_indicators` array), with no manipulation
 indicators. Shipping tracking may be signed under either accepted policy
 digest; owner intent is bound to the current or reviewed next-server policy
-digests `sha256:f9dbed6fb9bd4f2f2cbcd14703082965801b8a090fb9b558db76ad16a45a3cd1`
-and `sha256:8e96163e816880f1e62e8307964b3268c97ba496a5a96bf492e0d97d3b12be82`.
+digests `sha256:8e96163e816880f1e62e8307964b3268c97ba496a5a96bf492e0d97d3b12be82`
+and `sha256:0aedfb921cd643cbe8e4f9ac264539d5adc699d445030e66cab4e9d56ff68d48`.
 The signed decision reason must match the selected exception; missing,
 malformed, or third-party exceptions fail closed. The normal `SAFE` allow path
 remains unchanged.

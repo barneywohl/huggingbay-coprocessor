@@ -26,9 +26,9 @@ const DECISION_EVIDENCE_PROOF_SCHEMA = "bay-run.pin-decision-evidence-proof.v1";
 const POLICY_ID = "bay-run.canonical-pin-decision-policy.v1";
 const POLICY_DIGEST = `sha256:${"b".repeat(64)}`;
 const LIVE_POLICY_DIGEST =
-  "sha256:f9dbed6fb9bd4f2f2cbcd14703082965801b8a090fb9b558db76ad16a45a3cd1";
-const NEXT_POLICY_DIGEST =
   "sha256:8e96163e816880f1e62e8307964b3268c97ba496a5a96bf492e0d97d3b12be82";
+const NEXT_POLICY_DIGEST =
+  "sha256:0aedfb921cd643cbe8e4f9ac264539d5adc699d445030e66cab4e9d56ff68d48";
 const THIRD_POLICY_DIGEST = `sha256:${"c".repeat(64)}`;
 const BENIGN_TRACKING_REASON_CODE = "guard_benign_shipping_tracking";
 const BENIGN_OWNER_INTENT_REASON_CODE = "guard_benign_owner_intent";
