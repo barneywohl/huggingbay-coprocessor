@@ -215,7 +215,7 @@ check(
 );
 check(security.includes("fails closed by default"), "SECURITY.md fail-closed wording is missing");
 check(/Never commit a bearer, API key, private key, or provider\s+credential/.test(security), "SECURITY.md credential-safety wording is missing");
-check(readJson("package.json").version === "0.1.11", "package version must remain 0.1.11");
+check(readJson("package.json").version === "0.1.12", "package version must remain 0.1.12");
 
 const trackedFiles = execFileSync("git", ["ls-files", "-co", "--exclude-standard", "-z"], { cwd: repoRoot })
   .toString("utf8")
