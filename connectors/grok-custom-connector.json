@@ -2,7 +2,7 @@
   "type": "mcp",
   "server_url": "https://run.huggingbay.xyz/mcp/",
   "server_label": "bay_run",
-  "server_description": "Start with Bay Run's bounded Guard-first coprocessor; it independently guards user_text and every supplied document even when another Guard or action-safety signal already blocks or escalates, combines document actions as block > escalate > allow, and reranks only after every Guard allows. Use run_pin for a known canonical Pin and solve_task only as the open-ended fallback. A top-level escalate can preserve a signed Guard allow for high-risk action safety or Rerank abstention. Return execution evidence. The coprocessor accepts optional omit_raw_result, which defaults true; set omit_raw_result=false only for an explicit raw-evidence opt-in.",
+  "server_description": "Start with Bay Run's bounded Guard-first coprocessor; use run_pin for a known canonical Pin and solve_task only as the open-ended fallback. Lexical-overlap TinyBERT rerank demo (cross-encoder/ms-marco-TinyBERT-L2-v2): order the supplied documents for a query through the configured warm reranker. Not semantic RAG: literal token overlap can outrank a paraphrase and a one-sentence exact match can fall below the abstain threshold. Provisional route: an ordering aid only; it does not establish semantic relevance or answer correctness. The compact response always carries the rank order (document index + relevance), even when the decision abstains. Return execution evidence. The coprocessor accepts optional omit_raw_result, which defaults true; set omit_raw_result=false only for an explicit raw-evidence opt-in.",
   "allowed_tools": [
     "coprocessor",
     "run_pin",

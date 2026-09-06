@@ -14,8 +14,6 @@
   ],
   "verification": {
     "live_server_card": "https://run.huggingbay.xyz/.well-known/mcp/server-card.json",
-    "cursor_install_docs": "https://cursor.com/docs/mcp/install-links",
-    "privacy": "https://run.huggingbay.xyz/privacy",
-    "data_policy": "https://run.huggingbay.xyz/.well-known/data-policy.json"
+    "cursor_install_docs": "https://cursor.com/docs/mcp/install-links"
   }
 }

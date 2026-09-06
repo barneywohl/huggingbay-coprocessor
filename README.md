@@ -13,6 +13,10 @@ npm install @huggingbay/coprocessor
 
 For a local checkout, run `npm install .` from the repository root.
 
+The reviewed `skills/bay-run/` source used by the installation guidance below
+ships with the public repository and the published npm package. Connector
+assets and the live canary remain repository-checkout material.
+
 ## Install the [Bay Run skill](skills/bay-run/SKILL.md)
 
 The canonical source is [`skills/bay-run/`](skills/bay-run/). From this public
@@ -61,40 +65,51 @@ assets do not create credentials or claim provider approval. The checked-in
 provider allowlist is exactly `["coprocessor", "run_pin", "solve_task"]`; the
 Cursor MCP configuration is URL-only at `https://run.huggingbay.xyz/mcp/`.
 
-See the [connector overview](connectors/README.md), [Grok setup](connectors/grok-custom-connector.md),
-[Cursor setup](connectors/cursor-mcp.md), and [submission guidance](connectors/SUBMISSION.md).
+See the [connector overview](https://github.com/barneywohl/huggingbay-coprocessor/blob/main/connectors/README.md),
+[Grok setup](https://github.com/barneywohl/huggingbay-coprocessor/blob/main/connectors/grok-custom-connector.md),
+[Cursor setup](https://github.com/barneywohl/huggingbay-coprocessor/blob/main/connectors/cursor-mcp.md),
+and [submission guidance](https://github.com/barneywohl/huggingbay-coprocessor/blob/main/connectors/SUBMISSION.md).
 The connector policy fails closed on unavailable, unauthenticated, or
 malformed MCP responses. Before sending data, read Bay Run's [privacy policy](https://run.huggingbay.xyz/privacy)
 and [data policy](https://run.huggingbay.xyz/.well-known/data-policy.json).
 
+## Moderation boundary
+
+`withBayRun` supports the default Guard/document coprocessor path. It has no
+typed `policy` option and never silently sends `policy: "moderation"`. Direct
+REST moderation is a separate service contract until typed SDK support is
+independently verified; do not infer moderation support or response parity from
+this package.
+
 ## Contract
 
 `withBayRun(generate, options)` calls `POST /v1/coprocessor` before generation.
-It verifies the complete receipt-bound response and honors the returned top-level
-composite `action`; the signed Guard decision remains available unchanged in the
-generation context:
+It verifies the complete receipt-bound response and honors the returned
+top-level composite `action`; the signed Guard decision remains available
+unchanged in the generation context:
 
-- `allow`: only after `user_text` and every supplied document has an allow Guard
-  decision. It optionally prepares the request with ranked documents, then
-  invokes the generator and returns `{ status: "generated", output, decision }`.
+- `allow`: only after `user_text` and every supplied document has an allow
+  Guard decision. It optionally prepares the request with ranked documents,
+  then invokes the generator and returns
+  `{ status: "generated", output, decision }`.
 - `block`: does not invoke the generator and returns `{ status: "blocked" }`.
 - `escalate`: does not invoke the generator and returns the typed
-  `{ status: "review_required" }` result. This includes a high-risk action-safety
-  overlay and a signed Rerank abstention; neither overlay rewrites the signed
-  Guard decision.
+  `{ status: "review_required" }` result. This includes a high-risk
+  action-safety overlay and a signed Rerank abstention; neither overlay rewrites
+  the signed Guard decision.
 - transport, timeout, HTTP, or malformed-contract failures throw by default.
   This is the fail-closed policy. Set `failClosed: false` only when the caller
   explicitly accepts a `{ status: "bypassed" }` generation result.
 
 Successful 2xx responses must be the complete `bay-run.coprocessor.v1` contract,
 including the canonical Guard Pin identity, matching Guard evidence and receipt
-identity, exact `source`/`document_index` rows for every caller-owned document,
-an authenticated `decision` and `decision_evidence` for every executed stage,
-and a consistent `next_call`. Document Guard actions are combined with
-`block > escalate > allow` precedence; every supplied document is guarded even
-when the user Guard or action-safety signal already blocks or escalates, and a
-decisive document row must be the first row at the highest severity. Receipt and
-decision-evidence proofs are
+identity, exact `source` and `document_index` rows for every caller-owned
+document, an authenticated `decision` and `decision_evidence` for every
+executed stage, and a consistent `next_call`. Document Guard actions are
+combined with `block > escalate > allow` precedence; every supplied document is
+guarded even when the user Guard or action-safety signal already blocks or
+escalates, and a decisive document row must be the first row at the highest
+severity. Receipt and decision-evidence proofs are
 verified as Ed25519 signatures against the caller's configured key ID and raw
 public-key digest. Decision evidence is also pinned to the caller's current
 policy ID and digest. `proof.key_scope` must be exactly `configured`.
@@ -265,8 +280,9 @@ abstention pauses with `status: "review_required"` and
 `outcome.decision.action === "abstain"`; the provider preparation and generator
 are not called, while `outcome.context.decision.action` and the signed Guard
 evidence remain `allow`. A high-risk action-safety escalation similarly pauses
-without calling the provider; inspect `outcome.context.bayRunResponse.action_safety`
-for its bounded indicators. Built-in OpenAI
+without calling the provider; inspect
+`outcome.context.bayRunResponse.action_safety` for its bounded indicators.
+Built-in OpenAI
 and Anthropic adapters remove `bayRun`, `documents`, `idempotencyKey`, and
 `signal` before generation. To hand reranked documents to a provider, use
 `prepare`; it receives that provider-safe request plus the context. Reranking

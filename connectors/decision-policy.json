@@ -10,29 +10,6 @@
     "omit_raw_result": true,
     "raw_result_opt_in": "Set omit_raw_result=false only when receipt-bound raw evidence is explicitly required."
   },
-  "coprocessor_contract": {
-    "guard_inputs": "Guard user_text and every supplied documents item independently, even when the user Guard or action-safety signal already blocks or escalates.",
-    "document_mapping": "Require one document_guards summary and one evidence.document_guards stage per input, with source=document and the exact document_index.",
-    "document_precedence": ["block", "escalate", "allow"],
-    "rerank_gate": "Expose ranked documents only when every Guard action is allow and Rerank signal is ranked.",
-    "composite_escalation": "Top-level escalate may preserve a signed Guard allow for high-risk action safety or Rerank abstention."
-  },
-  "allowed_tools": [
-    "coprocessor",
-    "run_pin",
-    "solve_task"
-  ],
-  "failure_mode": {
-    "mode": "fail-closed",
-    "on_transport_or_auth_failure": "Stop; do not treat an unavailable or unauthenticated MCP response as allow.",
-    "on_malformed_or_missing_action": "Stop; do not generate, use tools, or read raw result data.",
-    "fail_open_configured": false
-  },
-  "privacy": {
-    "privacy_url": "https://run.huggingbay.xyz/privacy",
-    "data_policy_url": "https://run.huggingbay.xyz/.well-known/data-policy.json",
-    "before_use": "Read both links before sending user text or documents."
-  },
   "actions": {
     "allow": "Continue only within the caller's approved task and data policy.",
     "block": "Stop generation, tool use, and downstream execution for the input.",

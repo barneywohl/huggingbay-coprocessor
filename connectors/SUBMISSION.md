@@ -1,10 +1,9 @@
 # Connector submission guidance
 
-The checked-in receipt records that Cursor's Marketplace publish form displayed
-a submission acknowledgement for this public repository on 2026-08-28.
-Provider review remains pending; approval and marketplace listing are not
-claimed. The Grok material remains a Custom MCP setup guide rather than a
-public catalog submission.
+The source checkout records a verified Grok Custom MCP connection and a Cursor
+Marketplace submission acknowledgement. No provider approval is claimed by
+this repository. See the source checkout's provider receipt artifacts for the
+exact timestamps and evidence URLs.
 
 ## Grok
 
@@ -12,13 +11,11 @@ public catalog submission.
 2. In [Grok Connectors](https://grok.com/connectors), add a Custom MCP connector.
 3. Use `https://run.huggingbay.xyz/mcp/` and complete the provider's supported
    authentication flow.
-4. Confirm that the focused tool set is exactly `coprocessor`, `run_pin`, and
+4. Confirm that the focused tool set is `coprocessor`, `run_pin`, and
    `solve_task`, and exercise a safe, non-sensitive request.
 
 xAI's documented Custom MCP flow does not define a public third-party catalog
-submission process. The operator's Custom MCP connection was verified connected
-on 2026-08-28 with exactly the three expected tools; see
-`grok-connection.json`. Do not claim catalog submission or approval.
+submission process. Do not claim catalog submission or approval.
 
 ## Cursor
 
@@ -26,24 +23,12 @@ on 2026-08-28 with exactly the three expected tools; see
    `https://github.com/barneywohl/huggingbay-coprocessor`.
 2. Test the `cursor-plugin/` package locally in Cursor and confirm the
    URL-only MCP definition and bounded tool set.
-3. The public repository link was submitted through [Cursor Marketplace publishing](https://cursor.com/marketplace/publish)
-   on 2026-08-28; the publish-form acknowledgement is recorded in
-   `cursor-submission.json`.
-4. The public repository changed after that acknowledgement. Under the current
-   [Cursor Publisher Terms](https://cursor.com/marketplace-publisher-terms), a
-   human publisher must request a provider re-index for the changed package if
-   required; no re-index request is recorded here.
-5. Treat Cursor review, approval, and marketplace listing as separate provider
-   evidence. None is claimed by this repository.
-
-## Privacy and failure handling
-
-Before sending any user text or documents, read Bay Run's [privacy policy](https://run.huggingbay.xyz/privacy)
-and [data policy](https://run.huggingbay.xyz/.well-known/data-policy.json).
-The checked-in provider assets use a fail-closed decision policy: an
-authentication, transport, malformed-response, or missing-action failure stops
-the workflow and is never treated as `allow`. Credentials belong only in the
-provider's supported OAuth or runtime secret flow.
+3. The public repository link was submitted through [Cursor Marketplace publishing](https://cursor.com/marketplace/publish); the acknowledgement is recorded in the source checkout's Cursor receipt.
+4. The public repository changed after the acknowledged application. Under
+   Cursor's current [publisher terms](https://cursor.com/marketplace-publisher-terms),
+   a human publisher must request a provider re-index after plugin changes.
+5. Treat Cursor review, approval, and listing as separate provider evidence; do
+   not infer any of them from a successful local test or a submitted link.
 
 ## Revalidation before external action
 
@@ -54,6 +39,6 @@ pause and reconcile the connector files before any provider action.
 Re-fetch the [connector discovery document](https://run.huggingbay.xyz/.well-known/connectors.json),
 the [server card](https://run.huggingbay.xyz/.well-known/mcp/server-card.json),
 and the live `tools/list` response from `https://run.huggingbay.xyz/mcp/`.
-Read the [privacy policy](https://run.huggingbay.xyz/privacy) and [data policy](https://run.huggingbay.xyz/.well-known/data-policy.json)
+Read the [data policy](https://run.huggingbay.xyz/.well-known/data-policy.json)
 before sending data. Keep all tokens and provider credentials in the supported
 runtime authentication flow; never copy them into this repository.

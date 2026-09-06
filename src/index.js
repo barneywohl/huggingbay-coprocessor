@@ -1,12 +1,21 @@
 import { createHash, createPublicKey, verify as verifySignature } from "node:crypto";
+import { createRequire } from "node:module";
 import { isIP } from "node:net";
 
+// package.json is the single source of truth for the published version; the
+// X-Bay-Run-Client header is derived from it rather than pinned here.
+const { version: PACKAGE_VERSION } = createRequire(import.meta.url)("../package.json");
+
 const CURRENT_POLICY_DIGEST =
+  "sha256:8e49b7431df174819eae8bb99137f62c3ab10ead656008cc7c7f382d5b886891";
+// Explicit rollback compatibility; never learn trust from response metadata.
+const PREVIOUS_POLICY_DIGEST =
   "sha256:8e96163e816880f1e62e8307964b3268c97ba496a5a96bf492e0d97d3b12be82";
 const REVIEWED_NEXT_POLICY_DIGEST =
   "sha256:0aedfb921cd643cbe8e4f9ac264539d5adc699d445030e66cab4e9d56ff68d48";
 const PRODUCTION_POLICY_DIGESTS = Object.freeze([
   CURRENT_POLICY_DIGEST,
+  PREVIOUS_POLICY_DIGEST,
   REVIEWED_NEXT_POLICY_DIGEST,
 ]);
 
@@ -25,7 +34,7 @@ export const BAY_RUN_PRODUCTION_TRUST_V1 = Object.freeze({
 
 const DEFAULT_BASE_URL = "https://run.huggingbay.xyz";
 const DEFAULT_TIMEOUT_MS = 10_000;
-const SDK_HEADER = "@huggingbay/coprocessor/0.1.12";
+const SDK_HEADER = `@huggingbay/coprocessor/${PACKAGE_VERSION}`;
 const COPROCESSOR_SCHEMA = "bay-run.coprocessor.v1";
 const GUARD_POLICY_SCHEMA = "bay-run.guard-policy.v1";
 const PIN_PROOF_SCHEMA = "bay-run.pin-proof.v1";
@@ -99,11 +108,16 @@ const PIN_DECISION_EVIDENCE_ALLOWED_FIELDS = new Set([
   ...PIN_DECISION_EVIDENCE_SIGNED_FIELDS,
   "proof",
 ]);
-const PIN_RECEIPT_ALLOWED_FIELDS = new Set([
+const PIN_RECEIPT_REQUIRED_FIELDS = Object.freeze([
   ...PIN_RECEIPT_SIGNED_FIELDS,
   "no_spend_evidence",
   "receipt_id",
   "proof",
+]);
+const PIN_RECEIPT_ALLOWED_FIELDS = new Set([
+  ...PIN_RECEIPT_REQUIRED_FIELDS,
+  "verify_url",
+  "verify_request",
 ]);
 const PIN_PROOF_FIELDS = new Set([
   "schema",
@@ -1046,6 +1060,35 @@ function validateDecisionEvidence(
   );
 }
 
+function validateReceiptVerifyHint(receipt, stageName) {
+  const hasUrl = Object.hasOwn(receipt, "verify_url");
+  const hasRequest = Object.hasOwn(receipt, "verify_request");
+  if (!hasUrl && !hasRequest) return;
+  const fail = () => invalidContract(
+    `${stageName}.receipt has an invalid unsigned verification hint`,
+    "evidence_invalid",
+  );
+  if (!hasUrl || !hasRequest || typeof receipt.verify_url !== "string" ||
+      receipt.verify_url.length > 2048) return fail();
+  let url;
+  try { url = new URL(receipt.verify_url); } catch { return fail(); }
+  if (url.protocol !== "https:" || url.username || url.password || url.search ||
+      url.hash || url.pathname !== "/v1/provenance/verify" ||
+      url.href !== receipt.verify_url) return fail();
+  const request = receipt.verify_request;
+  const exactKeys = (value, keys) => isRecord(value) &&
+    Object.keys(value).length === keys.length &&
+    keys.every((key) => Object.hasOwn(value, key));
+  if (!exactKeys(request, ["method", "url", "headers", "body"]) ||
+      request.method !== "POST" || request.url !== receipt.verify_url ||
+      !exactKeys(request.headers, ["Content-Type"]) ||
+      request.headers["Content-Type"] !== "application/json" ||
+      !exactKeys(request.body, ["receipt"]) ||
+      request.body.receipt !== "<this receipt object, verbatim>") return fail();
+  // Discovery only: never fetch this URL, grant it trust, or include these
+  // unsigned fields in the receipt hash/signature payload.
+}
+
 function validateReceipt(
   receipt,
   pinId,
@@ -1082,6 +1125,7 @@ function validateReceipt(
       "evidence_invalid",
     );
   }
+  validateReceiptVerifyHint(receipt, stageName);
   if (receipt.schema !== PIN_RECEIPT_SCHEMA) {
     invalidContract(`${stageName}.receipt has an unsupported schema`, "evidence_invalid");
   }
@@ -2703,7 +2747,7 @@ export function verifyPinReceipt(receipt, options) {
   if (typeof receipt.pin_id !== "string" || receipt.pin_id.trim() === "") {
     invalidContract("pin receipt.pin_id must be a non-empty string", "evidence_invalid");
   }
-  for (const field of PIN_RECEIPT_ALLOWED_FIELDS) {
+  for (const field of PIN_RECEIPT_REQUIRED_FIELDS) {
     if (!Object.prototype.hasOwnProperty.call(receipt, field)) {
       invalidContract(`pin receipt.${field} is required`, "evidence_invalid");
     }

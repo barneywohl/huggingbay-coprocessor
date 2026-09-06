@@ -3,29 +3,25 @@
   "public_repository": "https://github.com/barneywohl/huggingbay-coprocessor",
   "package": {
     "name": "@huggingbay/coprocessor",
-    "version": "0.1.12",
+    "version": "0.1.15",
     "repository": "https://github.com/barneywohl/huggingbay-coprocessor",
     "bugs": "https://github.com/barneywohl/huggingbay-coprocessor/issues"
   },
   "status": {
-    "repository_created": true,
-    "repository_pushed": true,
-    "npm_published": true,
-    "connector_submitted": true,
+    "repository_created": false,
+    "repository_pushed": false,
+    "npm_published": false,
+    "connector_submitted": false,
     "connector_approved": false
   },
   "files": [
-    {
-      "path": ".cursor-plugin/marketplace.json",
-      "sha256": "a07dabc079187077148d71492ccade134c1e8d8c047f4c11943abe1c069aa5d2"
-    },
     {
       "path": "LICENSE",
       "sha256": "0f6fb5edade4b15736495e83127087dc6870b74ddfc607e20fe9d6b186851d68"
     },
     {
       "path": "README.md",
-      "sha256": "8b6a7ee1048fd738ebb99654d1686cf080ed33ac468504ee0798158a09347aef"
+      "sha256": "7714713f195f343906758a08e9d9e8181b9736eca6129b06054dfa794177502b"
     },
     {
       "path": "SECURITY.md",
@@ -37,15 +33,15 @@
     },
     {
       "path": "connectors/README.md",
-      "sha256": "5cac4e3202102cb5a36f35452c250c1d63e81756f6fb8496c8f3634e47893005"
+      "sha256": "19fa4537b1419cc0a2668147f1d6f2a3a059c2fa1c2f52cc07d3da1bdf3472ad"
     },
     {
       "path": "connectors/SUBMISSION.md",
-      "sha256": "916200f1065d1cfd0b570e5c41c58ad8eca4dee774d0c64236a54d67cf8e457c"
+      "sha256": "1d93ce6377669be01de26fae533f8d357c7ea486b6beb980ada54711f1793417"
     },
     {
       "path": "connectors/cursor-install.json",
-      "sha256": "886da0828939b773f3dbec190427c1f063136e2a927e0e117adcefa0056d5b63"
+      "sha256": "a68b9a25c01a82af6209bc4c667e644c9067017afb1b22c8d303f96f3cc30d02"
     },
     {
       "path": "connectors/cursor-mcp.json",
@@ -53,11 +49,11 @@
     },
     {
       "path": "connectors/cursor-mcp.md",
-      "sha256": "e10b2cc282252f254996fa1c230bf107c382d40f5d9f3fb86b1debe65584f23b"
+      "sha256": "5c717820484ea0ab29594b490f9e684f8171ddd4669f73ee936da7d57335bc60"
     },
     {
       "path": "connectors/cursor-plugin/.cursor-plugin/plugin.json",
-      "sha256": "50eb52ac2d498c905735a6c593b8cb701e1cbdbc63f0b58e6c1eab9f7049f56a"
+      "sha256": "03cb21f20fb0db063ff22f60699aeef34960480ca4906140815b2a989242c841"
     },
     {
       "path": "connectors/cursor-plugin/mcp.json",
@@ -65,15 +61,15 @@
     },
     {
       "path": "connectors/decision-policy.json",
-      "sha256": "759566eef7bebefb44bbc43af88f8013be4955e117c8cc0e168bda5dcc054233"
+      "sha256": "5ea36428ad29962d047d3e05dc0f3809942fce5a0c90aa6a5d2fe3b477ce6aa8"
     },
     {
       "path": "connectors/grok-custom-connector.json",
-      "sha256": "4bf3e2295d74925a92196f12294d81c0c4d65c266a9df27716d6adb14f87b059"
+      "sha256": "116d1d8bf72df7a7a1197545deaf23694f95088e67aa9b1c5a2d805981928519"
     },
     {
       "path": "connectors/grok-custom-connector.md",
-      "sha256": "5a52ebcb6c85d7e8b9adf37f2c999d1dbcebdb68f5d3b52a9e750ff6dc843693"
+      "sha256": "b81be4e057e86ab6e8d0720bb97787b217b21325b8385d151f6042cf465c25c4"
     },
     {
       "path": "examples/anthropic-style.mjs",
@@ -89,19 +85,19 @@
     },
     {
       "path": "package.json",
-      "sha256": "1260b1ef64a0d905039c143025d17eef2515299dd99da3e00e3a41c7c2fd8448"
+      "sha256": "c8744e5c6d718f62a7602a9f0b0f563cf4b57163ec10d9463e455049e9907d0f"
+    },
+    {
+      "path": "skills/bay-run/SKILL.md",
+      "sha256": "ef01336076031f2964d1158ecf62bbc89527ec5f7272724ac887e12ced21849b"
     },
     {
       "path": "src/index.d.ts",
-      "sha256": "41455eb242b8e27f6ef6412fe5f6b37f9d4b65d9cc930bb8b55dfff1b05ca1e5"
+      "sha256": "3fb37def0d072b4da4cc81ebf1ef3781b94454306a7930bb8fe8e2116069263f"
     },
     {
       "path": "src/index.js",
-      "sha256": "d47697b4b64fd0ec79e931689ce7defde0a5210d03dae929c8921905a10ac7f8"
-    },
-    {
-      "path": "verification/validate-connectors.mjs",
-      "sha256": "63a99244bcd3746ca3a8c05f8785fe2582df16d17aa4de2ef6fbec1acfb41f2a"
+      "sha256": "c401818568d1d012429eaa6bfea7d350ad15c15ed5c3a78fd86241c359e97e24"
     },
     {
       "path": "verification/verified-usage.mjs",

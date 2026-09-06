@@ -29,34 +29,16 @@ Keep the available tools bounded to:
 coprocessor, run_pin, solve_task
 ```
 
-Complete authentication through Cursor's supported OAuth or secret flow. The
-checked-in MCP object is intentionally URL-only: do not add headers, env
-values, OAuth client material, a bearer, API key, private key, or provider
-credential to configuration.
-
-Fail closed on an unavailable or unauthenticated server, a malformed response,
-or a missing or unsupported action. Stop without generation, tool use, or raw
-result handling; never treat an MCP or policy failure as `allow`.
-
-Before sending data, read Bay Run's [privacy policy](https://run.huggingbay.xyz/privacy)
-and [data policy](https://run.huggingbay.xyz/.well-known/data-policy.json).
+Complete authentication through Cursor's supported OAuth or secret flow. Do
+not put a bearer, API key, private key, or provider credential in configuration.
 
 ## Decision handling
 
 Start with `coprocessor` for the bounded Guard-first composition. For
 `run_pin` and `solve_task`, read `response.decision.action` before using
 `response.result`; for `coprocessor`, read the top-level `response.action`.
-The coprocessor independently guards `user_text` and every supplied document.
-Require complete, one-to-one `document_guards` and `evidence.document_guards`
-rows with `source="document"` and the exact `document_index`; combine their
-actions with `block > escalate > allow` precedence. Every supplied document
-still receives a Guard row when the user Guard or action-safety signal already
-blocks or escalates. Use ranked documents only
-when every Guard action is `allow` and Rerank returns `signal="ranked"`.
 Stop on `block`, pause on `escalate`, and continue only on `allow` within the
-caller's approved policy. A top-level `escalate` may preserve a signed Guard
-`allow` for high-risk action safety or Rerank abstention; do not rewrite that
-signed Guard evidence. The default is decision-only
+caller's approved policy. The default is decision-only
 (`omit_raw_result=true`); raw evidence is an explicit opt-in.
 
 Example `coprocessor` call:
@@ -73,8 +55,9 @@ Example `coprocessor` call:
 ```
 
 The connector never generates text or executes tools. Re-check the live
-contract before relying on route IDs or limits. See [submission guidance](SUBMISSION.md)
-for the separate human re-index and review steps. The checked-in receipt records
-a Cursor publish-form acknowledgement; the public repository changed after that
-acknowledgement, so a human publisher must request a provider re-index if
-required. No approval or marketplace listing is claimed.
+contract before relying on route IDs or limits. The Cursor Marketplace
+application is acknowledged and pending provider review; the public repository
+changed after acknowledgement, so a human publisher must request a provider
+re-index through the signed-in publisher flow if required. See [submission
+guidance](SUBMISSION.md) for the separate provider review steps. No approval or
+listing is claimed.

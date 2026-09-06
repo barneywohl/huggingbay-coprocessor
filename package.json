@@ -1,6 +1,6 @@
 {
   "name": "@huggingbay/coprocessor",
-  "version": "0.1.12",
+  "version": "0.1.15",
   "description": "Provider-neutral, Guard-first Bay Run middleware for caller-owned generation pipelines",
   "type": "module",
   "main": "./src/index.js",
@@ -33,6 +33,7 @@
     "src/",
     "bin/",
     "examples/",
+    "skills/",
     "README.md",
     "LICENSE"
   ],

@@ -6,9 +6,8 @@ contract, check the [Bay Run connector discovery document](https://run.huggingba
 and the [official xAI Custom MCP documentation](https://docs.x.ai/grok/connectors).
 
 Use `https://run.huggingbay.xyz/mcp/` as the MCP server URL and complete Grok's
-supported authentication flow. The official Grok flow is manual URL entry;
-this JSON is a bounded reference asset, not an xAI catalog-import format. Keep
-only these tools enabled when the client offers a per-tool selector:
+supported authentication flow. Keep only these tools enabled when the client
+offers a per-tool selector:
 
 ```json
 ["coprocessor", "run_pin", "solve_task"]
@@ -18,29 +17,10 @@ The `$BAY_RUN_TOKEN` value in the JSON is an environment placeholder, not a
 credential. Do not replace it with a token in a repository or connector
 packet.
 
-Fail closed on an unavailable or unauthenticated server, a malformed response,
-or a missing or unsupported action. Stop without generation, tool use, or raw
-result handling; never treat an MCP or policy failure as `allow`.
-
-Before sending data, read Bay Run's [privacy policy](https://run.huggingbay.xyz/privacy)
-and [data policy](https://run.huggingbay.xyz/.well-known/data-policy.json).
-
 ## Decision handling
 
 For `run_pin` and `solve_task`, inspect `response.decision.action` first. For
-`coprocessor`, inspect the top-level `response.action` first. The coprocessor
-guards `user_text` and every supplied document independently; its
-`document_guards` and `evidence.document_guards` rows must be complete,
-one-to-one, and aligned by `source="document"` plus `document_index`:
-
-- guard every supplied document even when the user Guard or action-safety
-  signal already blocks or escalates;
-- combine document actions with `block > escalate > allow` precedence;
-- use ranked documents only when every Guard action is `allow` and Rerank is
-  `signal="ranked"`;
-- treat top-level `escalate` with a signed Guard `allow` as a composite
-  action-safety or Rerank-abstention escalation, without rewriting the signed
-  Guard evidence.
+`coprocessor`, inspect the top-level `response.action` first:
 
 - `allow`: continue only within the caller's approved task and data policy.
 - `block`: stop generation, tool use, and downstream execution for that input.
@@ -62,5 +42,6 @@ Example `run_pin` call:
 
 The four currently documented canonical Pins are provisional. Re-check the
 live discovery document before relying on route IDs, limits, or availability.
-This pack makes no claim about a public third-party Grok catalog submission or
-approval; see [submission guidance](SUBMISSION.md).
+The source checkout records the verified Custom MCP connection. xAI does not
+document a public third-party Grok catalog submission workflow, so this pack
+makes no catalog-submission or approval claim; see [submission guidance](SUBMISSION.md).
